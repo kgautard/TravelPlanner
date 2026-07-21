@@ -1,0 +1,2308 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Planificateur de Voyage</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+
+.vy-root, .vy-root * { box-sizing: border-box; }
+.vy-root {
+  --paper: #F6F1E3;
+  --paper-dim: #ECE3CC;
+  --paper-card: #FBF8F0;
+  --ink: #24272E;
+  --ink-soft: #676C78;
+  --ink-faint: #9A9B90;
+  --vermilion: #C1401F;
+  --vermilion-dark: #93301A;
+  --kraft: #B99A6B;
+  --transit: #3E6E6C;
+  --transit-dark: #2C4F4E;
+  --line: #D9CDA8;
+  --success: #4B7A4B;
+  --danger: #B23A2E;
+  --warning: #D97706;
+  --shadow: 0 1px 2px rgba(36,39,46,.08), 0 4px 14px rgba(36,39,46,.06);
+  --font-display: 'Fraunces', Georgia, serif;
+  --font-body: 'IBM Plex Sans', 'Segoe UI', sans-serif;
+  --font-mono: 'IBM Plex Mono', 'Courier New', monospace;
+  font-family: var(--font-body);
+  color: var(--ink);
+  background: var(--paper);
+  min-height: 100vh;
+  width: 100%;
+  display: flex;
+  align-items: stretch;
+  position: relative;
+}
+.vy-root a { color: inherit; }
+.vy-root button { font-family: var(--font-body); cursor: pointer; }
+
+
+/* ---------- Sidebar (passport stamps) ---------- */
+.vy-sidebar {
+  width: 210px;
+  flex-shrink: 0;
+  background: var(--paper-dim);
+  border-right: 1px solid var(--line);
+  padding: 18px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.vy-brand {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: .01em;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.vy-brand-mark {
+  width: 26px; height: 26px; border-radius: 50%;
+  border: 1.5px dashed var(--vermilion);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; color: var(--vermilion); transform: rotate(-8deg);
+}
+.vy-triplist { display: flex; flex-direction: column; gap: 8px; overflow-y: auto; }
+.vy-tripstamp {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 8px; border-radius: 4px; border: 1px solid transparent;
+  background: transparent; text-align: left; width: 100%;
+}
+.vy-tripstamp:hover { background: rgba(193,64,31,.06); }
+.vy-tripstamp.active { background: var(--paper-card); border-color: var(--vermilion); box-shadow: var(--shadow); }
+.vy-stampcircle {
+  width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0;
+  border: 2px dashed var(--kraft);
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-mono); font-size: 11px; font-weight: 600;
+  color: var(--transit-dark); transform: rotate(-6deg);
+  background: repeating-radial-gradient(circle, transparent 0 2px, rgba(185,154,107,.08) 2px 3px);
+}
+.vy-tripstamp.active .vy-stampcircle { border-color: var(--vermilion); color: var(--vermilion-dark); }
+.vy-tripname { font-size: 13px; font-weight: 600; line-height: 1.2; }
+.vy-tripdates { font-size: 10.5px; color: var(--ink-soft); font-family: var(--font-mono); }
+.vy-newtrip-btn {
+  border: 1.5px dashed var(--ink-faint); background: transparent; border-radius: 4px;
+  padding: 9px 10px; font-size: 12.5px; color: var(--ink-soft); font-weight: 600;
+  display: flex; align-items: center; gap: 6px; justify-content: center;
+}
+.vy-newtrip-btn:hover { border-color: var(--vermilion); color: var(--vermilion-dark); }
+
+/* ---------- Main ---------- */
+.vy-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.vy-empty { margin: auto; text-align: center; padding: 40px; max-width: 380px; }
+.vy-empty h2 { font-family: var(--font-display); font-size: 24px; margin: 0 0 8px; }
+.vy-empty p { color: var(--ink-soft); font-size: 13.5px; margin: 0 0 18px; }
+
+/* Boarding pass header */
+.vy-boardingpass {
+  margin: 18px 20px 0;
+  background: var(--ink);
+  color: var(--paper);
+  border-radius: 6px;
+  display: flex;
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  position: relative;
+}
+.vy-bp-main { flex: 1; padding: 18px 22px; min-width: 0; }
+.vy-bp-eyebrow { font-family: var(--font-mono); font-size: 10.5px; letter-spacing: .12em; text-transform: uppercase; color: var(--kraft); margin-bottom: 6px; }
+.vy-bp-title { font-family: var(--font-display); font-size: 26px; font-weight: 600; margin: 0 0 4px; display:flex; align-items:baseline; gap:10px; }
+.vy-bp-title .vy-editbtn { font-size: 11px; font-family: var(--font-body); text-transform: none; letter-spacing: 0; color: var(--kraft); border: 1px solid rgba(255,255,255,.25); border-radius: 20px; padding: 3px 10px; font-weight: 600; background: transparent; }
+.vy-bp-sub { font-family: var(--font-mono); font-size: 12px; color: rgba(246,241,227,.7); }
+.vy-bp-divider {
+  width: 0; border-left: 2px dashed rgba(246,241,227,.3); position: relative; flex-shrink: 0;
+}
+.vy-bp-divider::before, .vy-bp-divider::after {
+  content: ''; position: absolute; left: 50%; transform: translateX(-50%);
+  width: 22px; height: 22px; border-radius: 50%; background: var(--paper);
+}
+.vy-bp-divider::before { top: -11px; } .vy-bp-divider::after { bottom: -11px; }
+.vy-bp-stub { width: 168px; flex-shrink: 0; padding: 18px 20px; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
+.vy-bp-count { font-family: var(--font-display); font-size: 34px; font-weight: 700; color: var(--vermilion); line-height: 1; }
+.vy-bp-countlabel { font-family: var(--font-mono); font-size: 10px; text-transform: uppercase; letter-spacing: .1em; color: rgba(246,241,227,.65); margin-top: 4px; }
+
+/* Tabs */
+.vy-tabs { display: flex; gap: 2px; margin: 16px 20px 0; border-bottom: 1px solid var(--line); overflow-x: auto; }
+.vy-tab {
+  background: transparent; border: none; padding: 10px 14px 12px; font-size: 12.5px; font-weight: 600;
+  color: var(--ink-soft); border-bottom: 2px solid transparent; white-space: nowrap; letter-spacing: .01em;
+}
+.vy-tab.active { color: var(--vermilion-dark); border-bottom-color: var(--vermilion); }
+.vy-tab:hover:not(.active) { color: var(--ink); }
+
+.vy-content { padding: 20px; flex: 1; overflow-y: auto; }
+.vy-section-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+.vy-section-head h3 { font-family: var(--font-display); font-size: 19px; margin: 0; font-weight: 600; }
+.vy-section-head p { color: var(--ink-soft); font-size: 12px; margin: 2px 0 0; }
+
+.vy-btn {
+  background: var(--vermilion); color: var(--paper); border: none; border-radius: 4px;
+  padding: 8px 14px; font-size: 12.5px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px;
+}
+.vy-btn:hover { background: var(--vermilion-dark); }
+.vy-btn.secondary { background: transparent; color: var(--ink); border: 1px solid var(--line); }
+.vy-btn.secondary:hover { border-color: var(--ink-faint); }
+.vy-btn.ghost { background: transparent; color: var(--ink-soft); padding: 4px 8px; font-weight: 600; }
+.vy-btn.danger { background: transparent; color: var(--danger); }
+.vy-btn.small { padding: 4px 9px; font-size: 11.5px; }
+.vy-iconbtn { background: transparent; border: none; color: var(--ink-faint); padding: 3px 5px; font-size: 13px; border-radius: 3px; }
+.vy-iconbtn:hover { color: var(--vermilion-dark); background: rgba(193,64,31,.08); }
+
+.vy-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
+.vy-empty-hint { border: 1.5px dashed var(--line); border-radius: 6px; padding: 26px; text-align: center; color: var(--ink-soft); font-size: 12.5px; }
+
+/* Overview stats */
+.vy-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px,1fr)); gap: 10px; margin-bottom: 24px; }
+.vy-stat {
+  background: var(--paper-card); border: 1px solid var(--line); border-radius: 6px; padding: 12px 14px;
+  cursor: pointer; transition: border-color .15s, box-shadow .15s; text-align: left;
+}
+.vy-stat:hover { border-color: var(--vermilion); box-shadow: 0 0 0 3px rgba(193,64,31,.1); }
+.vy-stat .n { font-family: var(--font-display); font-size: 24px; font-weight: 700; color: var(--vermilion-dark); }
+.vy-stat .l { font-size: 11px; color: var(--ink-soft); text-transform: uppercase; letter-spacing: .05em; margin-top: 2px; }
+
+/* Day grid */
+.vy-day-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(90px,1fr)); gap: 8px; margin-bottom: 20px; }
+.vy-day-btn {
+  background: var(--paper-card); border: 1px solid var(--line); border-radius: 6px;
+  padding: 10px 8px; text-align: center; cursor: pointer; transition: border-color .15s, box-shadow .15s;
+  font-family: var(--font-body);
+}
+.vy-day-btn:hover { border-color: var(--kraft); }
+.vy-day-btn.active { border-color: var(--vermilion); box-shadow: 0 0 0 3px rgba(193,64,31,.12); background: var(--paper); }
+.vy-day-btn.past { opacity: .42; filter: grayscale(.6); }
+.vy-day-btn .d-num { font-family: var(--font-display); font-size: 16px; font-weight: 700; color: var(--ink); line-height: 1; }
+.vy-day-btn .d-label { font-size: 10px; color: var(--ink-soft); margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.vy-day-btn .d-steps { margin-top: 4px; display: flex; justify-content: center; gap: 2px; flex-wrap: wrap; }
+.vy-day-btn .d-dot { width: 6px; height: 6px; border-radius: 50%; }
+.vy-day-btn.active .d-num { color: var(--vermilion-dark); }
+
+/* Day detail panel */
+.vy-day-detail { background: var(--paper-card); border: 1px solid var(--line); border-radius: 6px; padding: 16px 18px; margin-bottom: 20px; }
+.vy-day-detail h4 { font-family: var(--font-display); font-size: 16px; margin: 0 0 2px; }
+.vy-day-detail .dt { font-family: var(--font-mono); font-size: 11px; color: var(--ink-soft); margin-bottom: 12px; display: block; }
+.vy-day-detail .vy-day-notes { margin-bottom: 10px; }
+
+/* Trash button */
+.vy-trash-wrap { margin-top: 32px; display: flex; justify-content: flex-end; }
+.vy-trash-btn {
+  display: flex; align-items: center; gap: 6px; background: transparent; border: none;
+  color: var(--ink-faint); font-size: 11px; font-family: var(--font-body); padding: 4px 8px;
+  border-radius: 4px; cursor: pointer; transition: color .15s;
+}
+.vy-trash-btn:hover { color: var(--danger); }
+
+/* Ticket-stub card (flights & transport) */
+.vy-ticket {
+  background: var(--paper-card); border: 1px solid var(--line); border-radius: 6px;
+  box-shadow: var(--shadow); overflow: hidden; position: relative;
+}
+.vy-ticket-body { padding: 14px 16px; display: flex; align-items: center; gap: 14px; }
+.vy-ticket-route { flex: 1; display: flex; align-items: center; gap: 10px; min-width: 0; }
+.vy-ticket-pt { min-width: 0; }
+.vy-ticket-pt .city { font-family: var(--font-display); font-weight: 600; font-size: 16px; }
+.vy-ticket-pt .time { font-family: var(--font-mono); font-size: 11.5px; color: var(--ink-soft); }
+.vy-ticket-arrow { color: var(--kraft); font-size: 16px; flex-shrink: 0; }
+.vy-ticket-meta { font-family: var(--font-mono); font-size: 10.5px; color: var(--ink-soft); padding: 0 16px 12px; display:flex; gap:14px; flex-wrap:wrap; }
+.vy-ticket-tag { display:inline-block; font-family: var(--font-mono); font-size:10px; text-transform:uppercase; letter-spacing:.05em; background: var(--transit); color: var(--paper); padding: 2px 7px; border-radius: 20px; }
+.vy-ticket-actions { position: absolute; top: 8px; right: 8px; display: flex; gap: 2px; }
+.vy-ticket::after {
+  content: ''; position: absolute; left: 0; right: 0; top: 46px; border-top: 1.5px dashed var(--line);
+}
+
+/* Hotel card */
+.vy-hotel { background: var(--paper-card); border: 1px solid var(--line); border-radius: 6px; box-shadow: var(--shadow); padding: 14px 16px; position: relative; }
+.vy-hotel h4 { font-family: var(--font-display); font-size: 16px; margin: 0 0 4px; padding-right: 40px; }
+.vy-hotel .addr { font-size: 12px; color: var(--ink-soft); margin-bottom: 8px; }
+.vy-hotel .dates { font-family: var(--font-mono); font-size: 11.5px; display: flex; gap: 12px; }
+.vy-hotel .nights { display:inline-block; background: var(--kraft); color: #fff; font-size: 10px; padding: 2px 7px; border-radius: 20px; font-family: var(--font-mono); margin-left: 8px; }
+.vy-hotel .conf { margin-top: 8px; font-family: var(--font-mono); font-size: 11px; color: var(--transit-dark); }
+
+/* Places list */
+.vy-place-row { display: flex; align-items: flex-start; gap: 10px; background: var(--paper-card); border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; margin-bottom: 8px; }
+.vy-place-cat { font-family: var(--font-mono); font-size: 9.5px; text-transform: uppercase; letter-spacing: .06em; padding: 2px 7px; border-radius: 20px; flex-shrink: 0; margin-top: 2px; }
+.vy-map-legend { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+.vy-legend-pill {
+  display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 600;
+  color: var(--ink-faint); background: var(--paper-card); border: 1px solid var(--line);
+  border-radius: 20px; padding: 5px 11px 5px 8px; opacity: .55; transition: opacity .15s ease, border-color .15s ease;
+}
+.vy-legend-pill.active { opacity: 1; border-color: var(--pill-color); color: var(--ink); }
+.vy-legend-pill:hover { opacity: .85; }
+.vy-legend-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; border: 1.5px solid #fff; box-shadow: 0 0 0 1px rgba(0,0,0,.15); }
+.vy-place-row { cursor: pointer; transition: border-color .15s ease, box-shadow .15s ease; }
+.vy-place-row.selected { border-color: var(--vermilion); box-shadow: 0 0 0 2px rgba(193,64,31,.15); }
+.vy-place-row:hover { border-color: var(--ink-faint); }
+.vy-place-name { font-weight: 600; font-size: 13.5px; }
+.vy-place-notes { font-size: 12px; color: var(--ink-soft); margin-top: 2px; }
+.vy-place-coords { font-family: var(--font-mono); font-size: 10px; color: var(--ink-faint); margin-top: 3px; }
+
+/* Days / itinerary */
+.vy-day { background: var(--paper-card); border: 1px solid var(--line); border-radius: 6px; margin-bottom: 12px; overflow: hidden; }
+.vy-day-head { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; background: var(--paper-dim); }
+.vy-day-head .lbl { font-family: var(--font-display); font-weight: 600; font-size: 15px; }
+.vy-day-head .dt { font-family: var(--font-mono); font-size: 11px; color: var(--ink-soft); }
+.vy-day-body { padding: 12px 14px; }
+.vy-day-notes { font-size: 12px; color: var(--ink-soft); font-style: italic; margin-bottom: 8px; }
+.vy-step { display: flex; align-items: center; gap: 8px; padding: 7px 0; border-bottom: 1px dotted var(--line); font-size: 13px; }
+.vy-step:last-child { border-bottom: none; }
+.vy-step .stepnum { font-family: var(--font-mono); font-size: 10.5px; color: var(--kraft); width: 16px; flex-shrink: 0; }
+.vy-step .steptype { font-size: 12px; flex-shrink: 0; }
+.vy-step .stepcontent { flex: 1; min-width: 0; }
+.vy-step .stepsub { font-size: 10.5px; color: var(--ink-soft); font-family: var(--font-mono); }
+.vy-step-actions { display: flex; gap: 0; flex-shrink: 0; }
+
+/* Checklist */
+.vy-checklist-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+@media (max-width: 720px) { .vy-checklist-cols { grid-template-columns: 1fr; } }
+.vy-checklist-col h4 { font-family: var(--font-display); font-size: 15.5px; margin: 0 0 8px; }
+.vy-progress { height: 6px; background: var(--paper-dim); border-radius: 4px; overflow: hidden; margin-bottom: 10px; }
+.vy-progress > div { height: 100%; background: var(--vermilion); }
+
+.vy-budget-bars { display: flex; flex-direction: column; gap: 10px; margin-bottom: 4px; }
+.vy-budget-row { display: grid; grid-template-columns: 170px 1fr 90px; align-items: center; gap: 12px; }
+.vy-budget-row-label { font-size: 12.5px; color: var(--ink-soft); }
+.vy-budget-row-bar { height: 10px; background: var(--paper-dim); border-radius: 5px; overflow: hidden; }
+.vy-budget-row-bar > div { height: 100%; border-radius: 5px; transition: width .3s ease; }
+.vy-budget-row-amount { font-family: var(--font-mono); font-size: 12.5px; text-align: right; font-weight: 600; }
+@media (max-width: 640px){
+  .vy-budget-row { grid-template-columns: 110px 1fr 70px; gap: 8px; }
+  .vy-budget-row-label { font-size: 11px; }
+}
+
+.vy-expense-list { display: flex; flex-direction: column; border-top: 1px solid var(--line); }
+.vy-expense-row { display: flex; align-items: center; gap: 12px; padding: 10px 4px; border-bottom: 1px solid var(--line); }
+.vy-expense-row:hover { background: var(--paper-dim); }
+.vy-expense-cat-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+.vy-expense-main { flex: 1; min-width: 0; }
+.vy-expense-label { font-size: 13px; font-weight: 600; color: var(--ink); }
+.vy-expense-sub { font-size: 11.5px; color: var(--ink-soft); margin-top: 1px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.vy-expense-amount { font-family: var(--font-mono); font-weight: 700; color: var(--vermilion-dark); font-size: 13px; white-space: nowrap; }
+.vy-expense-actions { display: flex; gap: 4px; flex-shrink: 0; }
+@media (max-width: 640px){
+  .vy-expense-sub { white-space: normal; }
+}
+.vy-check-item { display: flex; align-items: center; gap: 9px; padding: 7px 2px; border-bottom: 1px dotted var(--line); font-size: 13px; }
+.vy-check-item input[type=checkbox] { width: 16px; height: 16px; accent-color: var(--vermilion); flex-shrink:0; }
+.vy-check-item.done .txt { text-decoration: line-through; color: var(--ink-faint); }
+.vy-check-item .txt { flex: 1; }
+.vy-checkform { display: flex; gap: 6px; margin-top: 10px; }
+
+/* Map tab */
+.vy-map-layout { display: grid; grid-template-columns: 300px 1fr; gap: 14px; align-items: start; }
+@media (max-width: 900px) { .vy-map-layout { grid-template-columns: 1fr; } }
+#vy-leaflet-map { height: 520px; border-radius: 6px; border: 1px solid var(--line); background: var(--paper-dim); }
+.vy-map-side { max-height: 560px; overflow-y: auto; }
+
+/* Dialog */
+.vy-root dialog.vy-dialog {
+  border: none; border-radius: 12px; padding: 0;
+  width: 540px; max-width: 95vw;
+  box-shadow: 0 20px 60px rgba(36,39,46,.28), 0 4px 12px rgba(36,39,46,.12);
+  background: var(--paper);
+}
+.vy-root dialog.vy-dialog::backdrop { background: rgba(36,39,46,.55); backdrop-filter: blur(2px); }
+.vy-dialog-head {
+  padding: 20px 24px 16px;
+  display: flex; align-items: center; justify-content: space-between;
+  background: var(--ink); border-radius: 12px 12px 0 0;
+}
+.vy-dialog-head h4 { font-family: var(--font-display); font-size: 18px; margin: 0; color: var(--paper); font-weight: 600; }
+.vy-close-x {
+  background: rgba(255,255,255,.1); border: none; width: 28px; height: 28px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; color: rgba(246,241,227,.8); cursor: pointer; line-height: 1;
+}
+.vy-close-x:hover { background: rgba(255,255,255,.2); color: var(--paper); }
+.vy-dialog-body { padding: 0; max-height: 68vh; overflow-y: auto; }
+.vy-dialog-foot {
+  padding: 16px 24px; display: flex; justify-content: flex-end; gap: 8px;
+  border-top: 1px solid var(--line); background: var(--paper-dim); border-radius: 0 0 12px 12px;
+}
+
+/* Form sections */
+.vy-dialog-section {
+  padding: 18px 24px 16px; border-bottom: 1px solid var(--line);
+}
+.vy-dialog-section:last-child { border-bottom: none; }
+.vy-dialog-section-title {
+  font-family: var(--font-mono); font-size: 10px; text-transform: uppercase; letter-spacing: .1em;
+  color: var(--kraft); font-weight: 600; margin-bottom: 14px; display: flex; align-items: center; gap: 8px;
+}
+.vy-dialog-section-title::after { content:''; flex:1; height:1px; background: var(--line); }
+.vy-date-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.vy-date-pair .vy-field { margin-bottom: 0; }
+
+/* Improved field layout */
+.vy-field { margin-bottom: 14px; }
+.vy-field:last-child { margin-bottom: 0; }
+.vy-root label {
+  font-size: 10.5px; text-transform: uppercase; letter-spacing: .07em;
+  color: var(--ink-soft); font-weight: 700; display: block; margin-bottom: 5px;
+}
+.vy-root input, .vy-root select, .vy-root textarea {
+  font-family: var(--font-body); font-size: 13.5px;
+  background: var(--paper-card); border: 1.5px solid var(--line);
+  border-radius: 5px; padding: 9px 12px; color: var(--ink); width: 100%;
+  transition: border-color .15s, box-shadow .15s;
+}
+.vy-root input:focus, .vy-root select:focus, .vy-root textarea:focus {
+  outline: none; border-color: var(--vermilion); box-shadow: 0 0 0 3px rgba(193,64,31,.1);
+}
+.vy-root input::placeholder { color: var(--ink-faint); }
+.vy-input-icon-wrap { position: relative; }
+.vy-input-icon-wrap input { padding-left: 34px; }
+.vy-input-icon-wrap .ico { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); font-size: 14px; pointer-events: none; }
+.vy-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.vy-row > * { min-width: 0; }
+.vy-row.thirds { grid-template-columns: 1fr 1fr 1fr; }
+.vy-row.two-one { grid-template-columns: 2fr 1fr; }
+.vy-note { font-size: 11px; color: var(--ink-faint); margin-top: -8px; margin-bottom: 12px; }
+
+/* Submit button */
+.vy-btn.primary-large { padding: 10px 22px; font-size: 13.5px; }
+
+.vy-loading { color: var(--ink-soft); font-size: 12.5px; padding: 20px; text-align: center; }
+.vy-attrib { font-size: 10px; color: var(--ink-faint); margin-top: 6px; }
+::-webkit-scrollbar { width: 9px; height: 9px; }
+::-webkit-scrollbar-thumb { background: var(--kraft); border-radius: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+
+/* ---------- Welcome screen ---------- */
+.vy-welcome-screen {
+  margin: auto; max-width: 480px; text-align: center; padding: 40px 30px;
+  background: var(--paper-card); border: 1px solid var(--line); border-radius: 8px; box-shadow: var(--shadow);
+}
+.vy-welcome-screen h1 { font-family: var(--font-display); font-size: 28px; margin: 0 0 12px; }
+.vy-welcome-screen p { color: var(--ink-soft); font-size: 13.5px; margin: 0 0 22px; line-height: 1.55; }
+.vy-welcome-actions { display: flex; flex-direction: column; gap: 10px; }
+.vy-welcome-note { font-size: 11.5px !important; color: var(--ink-faint) !important; margin: 16px 0 0 !important; }
+
+/* ---------- Top header / save status ---------- */
+.vy-top-header { display: flex; justify-content: space-between; align-items: center; padding: 14px 20px 0; gap: 12px; }
+.vy-filename { font-family: var(--font-mono); font-size: 11.5px; color: var(--ink-soft); }
+.vy-save-status-container {
+  display: flex; align-items: center; gap: 10px; background: var(--paper-dim);
+  padding: 6px 14px; border-radius: 20px; font-family: var(--font-mono); font-size: 11.5px;
+  border: 1px solid var(--line); position: relative; margin-left: auto;
+}
+.vy-status-dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; transition: background-color .3s ease; flex-shrink: 0; }
+.vy-status-dot.green { background-color: var(--success); box-shadow: 0 0 6px var(--success); }
+.vy-status-dot.orange { background-color: var(--warning); box-shadow: 0 0 6px var(--warning); }
+.vy-status-dot.red { background-color: var(--danger); box-shadow: 0 0 6px var(--danger); }
+.vy-save-menu-btn { background: transparent; border: none; font-size: 14px; padding: 2px 6px; color: var(--ink-soft); border-radius: 4px; }
+.vy-save-menu-btn:hover { background: rgba(0,0,0,.06); color: var(--ink); }
+.vy-save-dropdown {
+  position: absolute; top: 100%; right: 0; margin-top: 6px; background: var(--paper-card);
+  border: 1px solid var(--line); border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,.12);
+  z-index: 1000; display: none; min-width: 210px; overflow: hidden;
+}
+.vy-save-dropdown.show { display: block; }
+.vy-save-dropdown button {
+  width: 100%; text-align: left; background: transparent; border: none; padding: 10px 14px;
+  font-size: 12.5px; color: var(--ink); display: flex; align-items: center; gap: 8px;
+}
+.vy-save-dropdown button:hover { background: var(--paper-dim); }
+
+/* ---------- Mobile hamburger + drawer (desktop untouched above) ---------- */
+.vy-hamburger-btn { display: none; }
+.vy-sidebar-backdrop { display: none; }
+
+@media (max-width: 860px) {
+  html, body { overflow-x: hidden; max-width: 100%; }
+  .vy-root { overflow-x: hidden; }
+
+  /* Hamburger toggle button, shown in the top header on mobile */
+  .vy-hamburger-btn {
+    display: flex; align-items: center; justify-content: center;
+    width: 38px; height: 38px; flex-shrink: 0;
+    background: var(--paper-card); border: 1px solid var(--line); border-radius: 6px;
+    font-size: 16px; color: var(--ink); margin-right: auto;
+  }
+  .vy-hamburger-btn:active { background: var(--paper-dim); }
+
+  /* Sidebar becomes an off-canvas drawer */
+  .vy-sidebar {
+    position: fixed; top: 0; left: 0; height: 100dvh; z-index: 1300;
+    width: 250px; max-width: 82vw;
+    transform: translateX(-100%);
+    transition: transform .25s ease;
+    box-shadow: 0 0 0 1px rgba(36,39,46,.04), 0 12px 34px rgba(36,39,46,.28);
+    padding: 16px 14px calc(16px + env(safe-area-inset-bottom));
+  }
+  .vy-root.vy-sidebar-open .vy-sidebar { transform: translateX(0); }
+
+  .vy-sidebar-backdrop {
+    position: fixed; inset: 0; background: rgba(36,39,46,.5); z-index: 1200;
+    opacity: 0; pointer-events: none; transition: opacity .2s ease;
+  }
+  .vy-root.vy-sidebar-open .vy-sidebar-backdrop { display: block; opacity: 1; pointer-events: auto; }
+
+  .vy-tripstamp, .vy-newtrip-btn { padding: 11px 10px; }
+
+  /* Main takes the full width; sidebar floats above it */
+  #vyAppLayout { display: block !important; }
+  .vy-main { width: 100%; }
+
+  /* Top header */
+  .vy-top-header { padding: 12px 14px 0; gap: 8px; }
+  .vy-filename { display: none; }
+  .vy-save-status-container { margin-left: 0; flex: 1; justify-content: space-between; }
+  .vy-save-dropdown { right: 0; left: auto; min-width: 190px; max-width: calc(100vw - 28px); }
+
+  /* Boarding pass stacks vertically */
+  .vy-boardingpass { flex-direction: column; margin: 14px 14px 0; }
+  .vy-bp-main { padding: 16px 18px 14px; }
+  .vy-bp-title { font-size: 21px; flex-wrap: wrap; gap: 6px; }
+  .vy-bp-divider { width: auto; height: 0; border-left: none; border-top: 2px dashed rgba(246,241,227,.3); margin: 0 18px; }
+  .vy-bp-divider::before, .vy-bp-divider::after { top: 50%; }
+  .vy-bp-divider::before { left: -11px; transform: translateY(-50%); }
+  .vy-bp-divider::after { left: auto; right: -11px; top: 50%; transform: translateY(-50%); }
+  .vy-bp-stub { width: 100%; flex-direction: row; justify-content: center; gap: 10px; padding: 12px 18px; }
+
+  .vy-tabs { margin: 14px 14px 0; -webkit-overflow-scrolling: touch; }
+  .vy-tab { padding: 10px 12px 11px; }
+  .vy-content { padding: 14px; }
+
+  /* Form / content grids collapse to one column */
+  .vy-row, .vy-row.thirds, .vy-row.two-one,
+  .vy-date-pair,
+  .vy-checklist-cols,
+  .vy-map-layout { grid-template-columns: 1fr !important; }
+
+  .vy-budget-row { grid-template-columns: 96px 1fr 64px; gap: 6px; }
+
+  /* Tickets wrap instead of squeezing */
+  .vy-ticket-body { flex-wrap: wrap; }
+  .vy-ticket-route { flex-basis: 100%; }
+  .vy-ticket-meta { padding: 0 16px 12px; }
+
+  #vy-leaflet-map { height: 380px; }
+  .vy-map-side { max-height: none; }
+
+  /* Dialogs become near full-screen sheets for comfortable typing */
+  .vy-root dialog.vy-dialog {
+    width: 100vw; max-width: 100vw;
+    max-height: 92dvh;
+    margin: auto auto 0;
+    border-radius: 14px 14px 0 0;
+  }
+  .vy-dialog-body { max-height: 62dvh; }
+  .vy-dialog-foot { flex-wrap: wrap; }
+  .vy-dialog-foot .vy-btn { flex: 1; justify-content: center; }
+
+  /* Bigger touch targets */
+  .vy-btn { padding: 10px 16px; }
+  .vy-btn.small { padding: 8px 12px; }
+  .vy-iconbtn { padding: 7px 9px; font-size: 14px; }
+  .vy-root input, .vy-root select, .vy-root textarea { padding: 11px 12px; font-size: 16px; }
+  .vy-check-item input[type=checkbox] { width: 19px; height: 19px; }
+
+  .vy-welcome-screen { padding: 30px 20px; }
+}
+</style>
+</head>
+<body>
+
+<div class="vy-root" id="vyRoot">
+  <div id="vyWelcome" class="vy-welcome-screen">
+    <h1>✈ Carnet de Voyage</h1>
+    <p>Ouvrez un fichier de voyage existant, ou créez-en un nouveau. Vos données restent en local sur votre ordinateur — rien n'est envoyé ailleurs.</p>
+    <div class="vy-welcome-actions">
+      <button class="vy-btn" id="vyWelResumeBtn" style="display:none;">↺ Reprendre le dernier fichier</button>
+      <button class="vy-btn" id="vyWelOpenBtn">📂 Ouvrir un fichier existant</button>
+      <button class="vy-btn secondary" id="vyWelNewBtn">🆕 Créer une nouvelle sauvegarde</button>
+      <button class="vy-btn secondary" id="vyWelRestoreCacheBtn" style="display:none;">🕓 Restaurer la dernière session</button>
+    </div>
+    <p class="vy-welcome-note" id="vyWelNote"></p>
+  </div>
+
+  <div id="vyAppLayout" style="display:none; width:100%; align-items:stretch;">
+    <div class="vy-sidebar-backdrop" id="vySidebarBackdrop"></div>
+    <div class="vy-sidebar">
+      <div class="vy-brand"><span class="vy-brand-mark">✈</span> Voyages</div>
+      <div class="vy-triplist" id="vyTripList"></div>
+      <button class="vy-newtrip-btn" id="vyNewTripBtn" style="margin-top:auto;">+ Nouveau voyage</button>
+    </div>
+    <div class="vy-main" id="vyMain">
+      <div class="vy-top-header">
+        <button type="button" class="vy-hamburger-btn" id="vyHamburgerBtn" aria-label="Menu des voyages">☰</button>
+        <div class="vy-filename" id="vyFileName"></div>
+        <div class="vy-save-status-container" id="vySaveStatusContainer">
+          <span class="vy-status-dot green" id="vyStatusDot"></span>
+          <span id="vyStatusText">—</span>
+          <button class="vy-save-menu-btn" id="vySaveMenuBtn" title="Menu sauvegarde">💾</button>
+          <div class="vy-save-dropdown" id="vySaveDropdown">
+            <button type="button" id="menuImportBtn">📥 Importer une sauvegarde</button>
+            <button type="button" id="menuExportBtn">📤 Exporter</button>
+            <button type="button" id="menuPdfBtn">🖨 Exporter en PDF</button>
+            <button type="button" id="menuNewBtn" style="color:var(--danger);">🗑 Projet vide</button>
+          </div>
+        </div>
+      </div>
+      <div id="vyMainContent"><div class="vy-loading">Chargement…</div></div>
+    </div>
+  </div>
+</div>
+
+<input type="file" id="vyFileInput" accept="application/json" style="display:none;">
+
+<dialog class="vy-dialog" id="vyDialog">
+  <div class="vy-dialog-head">
+    <h4 id="vyDialogTitle">Titre</h4>
+    <button class="vy-close-x" id="vyDialogClose">✕</button>
+  </div>
+  <form id="vyDialogForm">
+    <div class="vy-dialog-body" id="vyDialogBody"></div>
+    <div class="vy-dialog-foot">
+      <button type="button" class="vy-btn secondary" id="vyDialogCancel">Annuler</button>
+      <button type="submit" class="vy-btn" id="vyDialogSubmit">Enregistrer</button>
+    </div>
+  </form>
+</dialog>
+
+<script>
+(function(){
+
+// ---------------------------------------------------------------- state
+let tripsIndex = [];
+let trips = {};
+let currentTripId = null;
+let currentTrip = null;
+let activeTab = 'apercu';
+let leafletReady = false;
+let mapObj = null, markersLayer = null, routeLayer = null;
+let placeMarkers = {};
+let mapCenteredForTripId = null;
+
+const CATS = { temple:'⛩ Temple/Sanctuaire', nature:'🌿 Nature', randonnee:'🥾 Randonnée', ville:'🏙 Ville/Quartier', food:'🍜 Restaurant', shopping:'🛍 Shopping', musee:'🖼 Musée', autre:'📍 Autre' };
+const CAT_COLORS = { temple:'#C1401F', nature:'#4B7A4B', randonnee:'#7A5C2E', ville:'#4A5C8C', food:'#D97706', shopping:'#A6407B', musee:'#6B4FA0', autre:'#8A8D7A' };
+const HOTEL_COLOR = '#B99A6B';
+const TRANSIT_COLOR = '#3E6E6C';
+const TRANSPORT_MODES = { train:'🚄 Train', metro:'🚇 Métro/Subway', bus:'🚌 Bus', ferry:'⛴ Ferry', voiture:'🚗 Voiture', pied:'🚶 À pied', avion:'✈ Vol interne' };
+const EXPENSE_CATS = { activite:'🎟 Activités & visites', nourriture:'🍜 Nourriture', shopping:'🛍 Shopping', assurance:'🛡 Assurance & visas', divers:'💰 Divers' };
+const EXPENSE_CAT_COLORS = { activite:'#6B4FA0', nourriture:'#D97706', shopping:'#A6407B', assurance:'#4A5C8C', divers:'#8A8D7A' };
+const CURRENCIES = { EUR:'€ Euro', USD:'$ Dollar US', JPY:'¥ Yen japonais', GBP:'£ Livre sterling', CHF:'CHF Franc suisse' };
+
+const root = document.getElementById('vyRoot');
+const mainEl = document.getElementById('vyMainContent');
+const tripListEl = document.getElementById('vyTripList');
+const dialog = document.getElementById('vyDialog');
+const dialogTitle = document.getElementById('vyDialogTitle');
+const dialogBody = document.getElementById('vyDialogBody');
+const dialogForm = document.getElementById('vyDialogForm');
+
+const welcomeScreen = document.getElementById('vyWelcome');
+const appLayout = document.getElementById('vyAppLayout');
+const welNote = document.getElementById('vyWelNote');
+const welResumeBtn = document.getElementById('vyWelResumeBtn');
+const welRestoreCacheBtn = document.getElementById('vyWelRestoreCacheBtn');
+const fileNameEl = document.getElementById('vyFileName');
+const statusDot = document.getElementById('vyStatusDot');
+const statusText = document.getElementById('vyStatusText');
+const saveMenuBtn = document.getElementById('vySaveMenuBtn');
+const saveDropdown = document.getElementById('vySaveDropdown');
+const fileInput = document.getElementById('vyFileInput');
+
+document.getElementById('vyNewTripBtn').addEventListener('click', openNewTripDialog);
+const vyRootEl = document.getElementById('vyRoot');
+const sidebarBackdrop = document.getElementById('vySidebarBackdrop');
+function closeSidebarDrawer(){ vyRootEl.classList.remove('vy-sidebar-open'); }
+document.getElementById('vyHamburgerBtn').addEventListener('click', ()=> vyRootEl.classList.toggle('vy-sidebar-open'));
+sidebarBackdrop.addEventListener('click', closeSidebarDrawer);
+tripListEl.addEventListener('click', (e)=>{ if(e.target.closest('[data-trip]')) closeSidebarDrawer(); });
+document.getElementById('vyDialogClose').addEventListener('click', ()=>dialog.close());
+document.getElementById('vyDialogCancel').addEventListener('click', ()=>dialog.close());
+
+document.getElementById('vyWelOpenBtn').addEventListener('click', openExistingFile);
+document.getElementById('vyWelNewBtn').addEventListener('click', createNewFile);
+welResumeBtn.addEventListener('click', resumeRememberedHandle);
+welRestoreCacheBtn.addEventListener('click', restoreFromLocalCache);
+saveMenuBtn.addEventListener('click', (e)=>{ e.stopPropagation(); saveDropdown.classList.toggle('show'); });
+document.addEventListener('click', ()=> saveDropdown.classList.remove('show'));
+document.getElementById('menuExportBtn').addEventListener('click', ()=>downloadCopy(buildBackupBaseName()+'.json'));
+document.getElementById('menuPdfBtn').addEventListener('click', exportTripPDF);
+document.getElementById('menuImportBtn').addEventListener('click', ()=>{ fileInput.dataset.mode='import'; fileInput.click(); });
+document.getElementById('menuNewBtn').addEventListener('click', ()=>{
+  if(confirm('Créer un projet vide ? Pensez à exporter la session actuelle avant si besoin.')) createNewFile();
+});
+fileInput.addEventListener('change', (e)=>{
+  const f = e.target.files[0];
+  if(f) handleLegacyFileSelected(f);
+  e.target.value = '';
+});
+window.addEventListener('beforeunload', (e)=>{
+  if(hasUnsavedChanges){ e.preventDefault(); e.returnValue = ''; return ''; }
+});
+
+// ---------------------------------------------------------------- helpers
+let idCounter = 0;
+function genId(){ idCounter++; return 'id_' + Date.now().toString(36) + '_' + idCounter.toString(36) + '_' + Math.random().toString(36).slice(2,6); }
+function esc(s){ return (s==null?'':String(s)).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function fmtDate(iso){ if(!iso) return ''; const d = new Date(iso+'T00:00:00'); if(isNaN(d)) return iso; return d.toLocaleDateString('fr-FR',{weekday:'short', day:'2-digit', month:'short'}); }
+function fmtDateLong(iso){ if(!iso) return ''; const d = new Date(iso+'T00:00:00'); if(isNaN(d)) return iso; return d.toLocaleDateString('fr-FR',{weekday:'long', day:'2-digit', month:'long', year:'numeric'}); }
+function daysBetween(a,b){ const da=new Date(a+'T00:00:00'), db=new Date(b+'T00:00:00'); return Math.round((db-da)/86400000); }
+function addDays(iso,n){ const d=new Date(iso+'T00:00:00'); d.setDate(d.getDate()+n); return d.toISOString().slice(0,10); }
+function todayIso(){ return new Date().toISOString().slice(0,10); }
+function fmtMoney(n, currency){
+  const cur = currency || (currentTrip && currentTrip.meta.currency) || 'EUR';
+  if(n==null || isNaN(n)) return '—';
+  try{ return Number(n).toLocaleString('fr-FR', { style:'currency', currency:cur, maximumFractionDigits: (cur==='JPY'?0:2) }); }
+  catch(e){ return Number(n).toFixed(2) + ' ' + cur; }
+}
+
+function defaultTripData(meta){
+  return { meta, flights:[], hotels:[], places:[], days:[], transport:[], checklist:[], expenses:[] };
+}
+function generateDays(trip){
+  const {startDate,endDate} = trip.meta;
+  if(!startDate || !endDate) return;
+  const existing = {}; trip.days.forEach(d=>existing[d.date]=d);
+  const n = Math.max(0, daysBetween(startDate,endDate));
+  const newDays = [];
+  for(let i=0;i<=n;i++){
+    const date = addDays(startDate,i);
+    if(existing[date]) newDays.push(existing[date]);
+    else newDays.push({ id: genId(), date, label:'Jour '+(i+1), notes:'', steps:[] });
+  }
+  trip.days = newDays;
+}
+function defaultChecklist(){
+  return [
+    {id:genId(), category:'before', text:'Vérifier la validité du passeport (6 mois min.)', done:false},
+    {id:genId(), category:'before', text:'Souscrire une assurance voyage', done:false},
+    {id:genId(), category:'before', text:'Prévenir la banque du voyage / vérifier plafonds carte', done:false},
+    {id:genId(), category:'before', text:'Réserver JR Pass / commander IC Card (Suica, Pasmo…)', done:false},
+    {id:genId(), category:'before', text:'Télécharger les cartes hors-ligne (Google Maps)', done:false},
+    {id:genId(), category:'before', text:'Souscrire un forfait data / e-SIM local', done:false},
+    {id:genId(), category:'before', text:"Réserver les restaurants / attractions à l'avance", done:false},
+    {id:genId(), category:'packing', text:'Adaptateur secteur (prise type A)', done:false},
+    {id:genId(), category:'packing', text:'Batterie externe', done:false},
+    {id:genId(), category:'packing', text:'Trousse de pharmacie de base', done:false},
+    {id:genId(), category:'packing', text:'Espèces en devise locale', done:false},
+  ];
+}
+
+// ---------------------------------------------------------------- persistence (local file)
+const hasFS = ('showOpenFilePicker' in window && 'showSaveFilePicker' in window);
+let dbHandle = null;          // FileSystemFileHandle when using the File System Access API
+let fileMode = null;          // 'fsapi' | 'download'
+let currentFileName = 'voyages.json';
+let hasUnsavedChanges = false;
+let autosaveTimer = null;
+let isSessionOpen = false;
+let pendingHandle = null;     // remembered handle awaiting permission before we can reopen it
+
+// ---- remembering the last opened file across browser sessions (IndexedDB) ----
+const IDB_NAME = 'vy-carnet-voyage';
+const IDB_STORE = 'handles';
+function idbOpen(){
+  return new Promise((resolve, reject)=>{
+    if(!window.indexedDB){ reject(new Error('indexedDB indisponible')); return; }
+    const req = indexedDB.open(IDB_NAME, 1);
+    req.onupgradeneeded = ()=>{ req.result.createObjectStore(IDB_STORE); };
+    req.onsuccess = ()=> resolve(req.result);
+    req.onerror = ()=> reject(req.error);
+  });
+}
+async function idbSet(key, value){
+  try{
+    const db = await idbOpen();
+    return await new Promise((resolve, reject)=>{
+      const tx = db.transaction(IDB_STORE, 'readwrite');
+      tx.objectStore(IDB_STORE).put(value, key);
+      tx.oncomplete = ()=>resolve(true);
+      tx.onerror = ()=>reject(tx.error);
+    });
+  }catch(e){ console.warn('idbSet failed', e); return false; }
+}
+async function idbGet(key){
+  try{
+    const db = await idbOpen();
+    return await new Promise((resolve, reject)=>{
+      const tx = db.transaction(IDB_STORE, 'readonly');
+      const req = tx.objectStore(IDB_STORE).get(key);
+      req.onsuccess = ()=>resolve(req.result || null);
+      req.onerror = ()=>reject(req.error);
+    });
+  }catch(e){ console.warn('idbGet failed', e); return null; }
+}
+async function idbDelete(key){
+  try{
+    const db = await idbOpen();
+    return await new Promise((resolve)=>{
+      const tx = db.transaction(IDB_STORE, 'readwrite');
+      tx.objectStore(IDB_STORE).delete(key);
+      tx.oncomplete = ()=>resolve(true);
+      tx.onerror = ()=>resolve(false);
+    });
+  }catch(e){ return false; }
+}
+
+// ---- lightweight local cache (covers browsers without the File System Access API,
+// and acts as a safety net if a remembered file handle ever becomes unusable) ----
+function cacheLocally(){
+  try{
+    localStorage.setItem('vy_last_payload', JSON.stringify(buildFullPayload()));
+    localStorage.setItem('vy_last_filename', currentFileName);
+  }catch(e){ console.warn('local cache failed', e); }
+}
+function restoreFromLocalCache(){
+  try{
+    const raw = localStorage.getItem('vy_last_payload');
+    if(!raw) return;
+    const data = JSON.parse(raw);
+    fileMode = 'download';
+    dbHandle = null;
+    currentFileName = localStorage.getItem('vy_last_filename') || 'voyages.json';
+    loadPayload(data);
+    openApp();
+    setStatus('dirty');
+  }catch(e){ alert('Impossible de restaurer la session enregistrée.'); console.error(e); }
+}
+async function resumeRememberedHandle(){
+  if(!pendingHandle) return;
+  try{
+    const perm = await pendingHandle.requestPermission({ mode: 'readwrite' });
+    if(perm !== 'granted'){ alert("Permission refusée pour ce fichier. Utilisez « Ouvrir un fichier existant » à la place."); return; }
+    const file = await pendingHandle.getFile();
+    const data = JSON.parse(await file.text());
+    dbHandle = pendingHandle; fileMode = 'fsapi'; currentFileName = pendingHandle.name;
+    loadPayload(data);
+    openApp();
+    setStatus('saved');
+  }catch(e){ console.error(e); alert("Impossible de rouvrir ce fichier — il a peut-être été déplacé, renommé ou supprimé."); }
+}
+async function checkForRememberedFile(){
+  if(hasFS){
+    const handle = await idbGet('lastHandle');
+    if(handle){
+      try{
+        const perm = await handle.queryPermission({ mode: 'readwrite' });
+        if(perm === 'granted'){
+          // Already authorized: reopen it immediately, no click needed.
+          const file = await handle.getFile();
+          const data = JSON.parse(await file.text());
+          dbHandle = handle; fileMode = 'fsapi'; currentFileName = handle.name;
+          loadPayload(data);
+          openApp();
+          setStatus('saved');
+          return;
+        } else {
+          // Browsers require a fresh user gesture to (re)grant file permissions,
+          // so we surface a one-click "Reprendre" button instead of the picker.
+          pendingHandle = handle;
+          welResumeBtn.textContent = '↺ Reprendre « ' + handle.name + ' »';
+          welResumeBtn.style.display = 'inline-flex';
+        }
+      }catch(e){ console.warn('remembered handle unusable', e); idbDelete('lastHandle'); }
+    }
+  }
+  if(!pendingHandle){
+    try{
+      if(localStorage.getItem('vy_last_payload')){
+        const fname = localStorage.getItem('vy_last_filename') || 'voyages.json';
+        welRestoreCacheBtn.textContent = '🕓 Restaurer la dernière session (' + fname + ')';
+        welRestoreCacheBtn.style.display = 'inline-flex';
+      }
+    }catch(e){}
+  }
+}
+
+function buildFullPayload(){
+  return { version: 1, savedAt: new Date().toISOString(), tripsIndex, trips, currentTripId };
+}
+function loadPayload(data){
+  tripsIndex = data.tripsIndex || [];
+  trips = data.trips || {};
+  Object.values(trips).forEach(t=>{
+    if(!Array.isArray(t.expenses)) t.expenses = [];
+    if(!t.meta.currency) t.meta.currency = 'EUR';
+  });
+  currentTripId = (data.currentTripId && trips[data.currentTripId]) ? data.currentTripId : (tripsIndex[0] ? tripsIndex[0].id : null);
+  currentTrip = currentTripId ? trips[currentTripId] : null;
+}
+function openApp(){
+  welcomeScreen.style.display = 'none';
+  appLayout.style.display = 'flex';
+  isSessionOpen = true;
+  activeTab = 'apercu';
+  hiddenCats = new Set();
+  selectedPlaceId = null;
+  fileNameEl.textContent = '📄 ' + currentFileName;
+  cacheLocally();
+  renderAll();
+}
+
+function setStatus(state, extra){
+  statusDot.className = 'vy-status-dot ' + ({saved:'green', dirty:'orange', saving:'orange', error:'red'}[state] || 'green');
+  const now = new Date().toLocaleTimeString('fr-FR');
+  if(state==='saved'){ statusText.textContent = fileMode==='fsapi' ? ('Enregistré à '+now) : ('À jour dans cette session ('+now+')'); hasUnsavedChanges=false; }
+  else if(state==='dirty'){ statusText.textContent = fileMode==='fsapi' ? 'Modifications non enregistrées…' : 'Non exporté — pensez à « Exporter »'; }
+  else if(state==='saving'){ statusText.textContent = 'Sauvegarde…'; }
+  else if(state==='error'){ statusText.textContent = extra || 'Erreur de sauvegarde'; }
+}
+
+function markDirty(){
+  if(!isSessionOpen) return;
+  hasUnsavedChanges = true;
+  setStatus('dirty');
+  cacheLocally();
+  clearTimeout(autosaveTimer);
+  autosaveTimer = setTimeout(runAutosave, fileMode==='fsapi' ? 900 : 1500);
+}
+
+let autosaveInFlight = false;
+let autosavePending = false;
+async function runAutosave(){
+  if(fileMode !== 'fsapi' || !dbHandle){
+    // No File System Access API handle: we can't silently write to disk.
+    // The dirty indicator stays on to remind the person to Save/Export.
+    return;
+  }
+  if(autosaveInFlight){
+    // A write is already in progress on this file handle. Starting a second
+    // one concurrently can corrupt or truncate the file, so we queue this
+    // request and it will run right after the current one finishes.
+    autosavePending = true;
+    return;
+  }
+  autosaveInFlight = true;
+  setStatus('saving');
+  try{
+    const writable = await dbHandle.createWritable();
+    await writable.write(JSON.stringify(buildFullPayload(), null, 2));
+    await writable.close();
+    setStatus('saved');
+  }catch(e){
+    console.error('autosave failed', e);
+    setStatus('error', 'Échec de la sauvegarde automatique');
+  } finally {
+    autosaveInFlight = false;
+    if(autosavePending){
+      autosavePending = false;
+      runAutosave();
+    }
+  }
+}
+
+async function openExistingFile(){
+  if(hasFS){
+    try{
+      const [handle] = await window.showOpenFilePicker({ types: [{ description: 'Voyages JSON', accept: {'application/json': ['.json']} }] });
+      const file = await handle.getFile();
+      const text = await file.text();
+      const data = JSON.parse(text);
+      dbHandle = handle; fileMode = 'fsapi'; currentFileName = handle.name;
+      loadPayload(data);
+      openApp();
+      setStatus('saved');
+      idbSet('lastHandle', handle);
+    }catch(e){ if(e && e.name !== 'AbortError'){ console.error(e); alert("Impossible d'ouvrir ce fichier (format invalide ?)."); } }
+  } else {
+    fileInput.dataset.mode = 'open';
+    fileInput.click();
+  }
+}
+async function createNewFile(){
+  if(hasFS){
+    try{
+      const handle = await window.showSaveFilePicker({ suggestedName: 'voyages.json', types: [{ description: 'Voyages JSON', accept: {'application/json': ['.json']} }] });
+      dbHandle = handle; fileMode = 'fsapi'; currentFileName = handle.name;
+      tripsIndex = []; trips = {}; currentTripId = null; currentTrip = null;
+      const writable = await handle.createWritable();
+      await writable.write(JSON.stringify(buildFullPayload(), null, 2));
+      await writable.close();
+      openApp();
+      setStatus('saved');
+      idbSet('lastHandle', handle);
+    }catch(e){ if(e && e.name !== 'AbortError'){ console.error(e); alert('Impossible de créer le fichier.'); } }
+  } else {
+    fileMode = 'download';
+    currentFileName = 'voyages.json';
+    tripsIndex = []; trips = {}; currentTripId = null; currentTrip = null;
+    openApp();
+    setStatus('dirty');
+  }
+}
+function handleLegacyFileSelected(file){
+  const mode = fileInput.dataset.mode || 'open';
+  const reader = new FileReader();
+  reader.onload = () => {
+    try{
+      const data = JSON.parse(reader.result);
+      if(mode === 'import' && isSessionOpen){
+        if(!confirm('Importer va remplacer toutes les données actuellement affichées par celles du fichier choisi. Continuer ?')) return;
+      }
+      fileMode = 'download';
+      currentFileName = file.name;
+      loadPayload(data);
+      openApp();
+      setStatus('dirty');
+    }catch(e){ alert('Fichier invalide.'); console.error(e); }
+  };
+  reader.readAsText(file);
+}
+function sanitizeForFilename(s){
+  return (s||'voyage')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/[^a-zA-Z0-9]+/g,'_')
+    .replace(/^_+|_+$/g,'') || 'voyage';
+}
+function formatDateTimeForFilename(){
+  const d = new Date();
+  const pad = n=>String(n).padStart(2,'0');
+  return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+'_'+pad(d.getHours())+'h'+pad(d.getMinutes());
+}
+function buildBackupBaseName(){
+  const tripName = currentTrip ? currentTrip.meta.name : (tripsIndex[0] ? tripsIndex[0].name : '');
+  return 'save_' + sanitizeForFilename(tripName) + '_planner_' + formatDateTimeForFilename();
+}
+function downloadCopy(name){
+  const blob = new Blob([JSON.stringify(buildFullPayload(), null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+}
+
+// ---------------------------------------------------------------- PDF export (vols / hôtels / transports)
+function buildPrintableHTML(t){
+  const m = t.meta;
+  const flightsAller = t.flights.filter(f=>f.direction==='aller');
+  const flightsRetour = t.flights.filter(f=>f.direction==='retour');
+  const sortedTransport = [...t.transport].sort((a,b)=> (a.date||'').localeCompare(b.date||'') || (a.time||'').localeCompare(b.time||''));
+  const fmtDT = (iso)=> iso ? new Date(iso).toLocaleString('fr-FR', {dateStyle:'medium', timeStyle:'short'}) : '';
+
+  function flightItems(list){
+    if(!list.length) return '<p class="pdf-empty">Aucun vol enregistré.</p>';
+    return list.map(f=>`
+      <div class="pdf-item">
+        <div class="pdf-item-title">${esc(f.depCity||f.depAirport||'?')}${f.depAirport?' ('+esc(f.depAirport)+')':''} → ${esc(f.arrCity||f.arrAirport||'?')}${f.arrAirport?' ('+esc(f.arrAirport)+')':''}</div>
+        <div class="pdf-item-meta">${[f.airline&&esc(f.airline), f.flightNumber&&esc(f.flightNumber), f.depDatetime&&('Départ '+fmtDT(f.depDatetime)), f.arrDatetime&&('Arrivée '+fmtDT(f.arrDatetime)), f.confirmation&&('Réf. '+esc(f.confirmation))].filter(Boolean).join(' · ')}</div>
+        ${f.notes?'<div class="pdf-item-notes">'+esc(f.notes)+'</div>':''}
+      </div>`).join('');
+  }
+  function hotelItems(list){
+    if(!list.length) return '<p class="pdf-empty">Aucun hôtel enregistré.</p>';
+    return list.map(h=>{
+      const nights = (h.checkin && h.checkout) ? daysBetween(h.checkin, h.checkout) : null;
+      return `<div class="pdf-item">
+        <div class="pdf-item-title">${esc(h.name||'Hôtel')}</div>
+        <div class="pdf-item-meta">${esc(h.address||'')}</div>
+        <div class="pdf-item-meta">${[h.checkin&&fmtDateLong(h.checkin), h.checkout&&('→ '+fmtDateLong(h.checkout)), nights!=null&&(nights+' nuit'+(nights>1?'s':'')), h.confirmation&&('Réf. '+esc(h.confirmation))].filter(Boolean).join(' · ')}</div>
+        ${h.notes?'<div class="pdf-item-notes">'+esc(h.notes)+'</div>':''}
+      </div>`;
+    }).join('');
+  }
+  function transportItems(list){
+    if(!list.length) return '<p class="pdf-empty">Aucun trajet enregistré.</p>';
+    return list.map(tr=>`
+      <div class="pdf-item">
+        <div class="pdf-item-title">${esc(tr.fromName||'?')} → ${esc(tr.toName||'?')}</div>
+        <div class="pdf-item-meta">${[TRANSPORT_MODES[tr.mode]&&TRANSPORT_MODES[tr.mode].replace(/^\S+\s/,''), tr.line&&esc(tr.line), tr.date&&fmtDate(tr.date), tr.time&&('Départ '+esc(tr.time)), tr.arrivalTime&&('Arrivée '+esc(tr.arrivalTime))].filter(Boolean).join(' · ')}</div>
+        ${tr.notes?'<div class="pdf-item-notes">'+esc(tr.notes)+'</div>':''}
+      </div>`).join('');
+  }
+
+  return `<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>${esc(buildBackupBaseName())}</title>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, 'Times New Roman', serif; color:#24272E; margin:0; padding:40px 46px; }
+  h1 { font-size: 25px; margin: 0 0 4px; }
+  .pdf-sub { font-family: Arial, Helvetica, sans-serif; font-size: 12px; color:#676C78; margin-bottom: 30px; }
+  h2 { font-family: Arial, Helvetica, sans-serif; font-size: 13.5px; text-transform: uppercase; letter-spacing: .06em; color:#93301A; border-bottom: 1.5px solid #C1401F; padding-bottom: 6px; margin: 28px 0 12px; }
+  .pdf-section:first-of-type h2 { margin-top: 0; }
+  .pdf-item { padding: 10px 0; border-bottom: 1px dotted #D9CDA8; }
+  .pdf-item:last-child { border-bottom: none; }
+  .pdf-item-title { font-weight: 700; font-size: 14px; }
+  .pdf-item-meta { font-family: Arial, Helvetica, sans-serif; font-size: 11.5px; color:#676C78; margin-top: 3px; }
+  .pdf-item-notes { font-size: 12px; color:#24272E; margin-top: 4px; font-style: italic; }
+  .pdf-empty { font-family: Arial, Helvetica, sans-serif; font-size: 12px; color:#9A9B90; }
+  .pdf-section { page-break-inside: avoid; }
+  @media print { body { padding: 16px 24px; } }
+</style>
+</head>
+<body>
+  <h1>${esc(m.name||'Voyage')}</h1>
+  <div class="pdf-sub">${esc(m.country||'')}${m.startDate?' · '+fmtDateLong(m.startDate):''}${m.endDate?' → '+fmtDateLong(m.endDate):''}</div>
+
+  <div class="pdf-section">
+    <h2>✈ Vols — Aller</h2>
+    ${flightItems(flightsAller)}
+  </div>
+  <div class="pdf-section">
+    <h2>✈ Vols — Retour</h2>
+    ${flightItems(flightsRetour)}
+  </div>
+  <div class="pdf-section">
+    <h2>🏨 Hôtels</h2>
+    ${hotelItems(t.hotels)}
+  </div>
+  <div class="pdf-section">
+    <h2>🚉 Transports</h2>
+    ${transportItems(sortedTransport)}
+  </div>
+</body>
+</html>`;
+}
+function exportTripPDF(){
+  if(!currentTrip){ alert('Aucun voyage sélectionné.'); return; }
+  const html = buildPrintableHTML(currentTrip);
+  const w = window.open('', '_blank');
+  if(!w){ alert("Le navigateur a bloqué l'ouverture de la fenêtre d'impression. Autorisez les pop-ups pour ce site, puis réessayez."); return; }
+  w.document.open();
+  w.document.write(html);
+  w.document.close();
+  w.focus();
+  setTimeout(()=>{ w.print(); }, 350);
+}
+
+
+if(!hasFS){
+  welNote.textContent = "Votre navigateur ne permet pas l'écriture directe de fichier : la sauvegarde se fera par téléchargement manuel (bouton « Exporter »/« Sauvegarder »). Utilisez Chrome ou Edge pour une sauvegarde automatique sur fichier.";
+}
+
+
+// ---------------------------------------------------------------- trip CRUD
+function createTrip(meta){
+  const id = genId();
+  if(!meta.currency) meta.currency = 'EUR';
+  tripsIndex.unshift({ id, name:meta.name, country:meta.country, startDate:meta.startDate, endDate:meta.endDate });
+  const data = defaultTripData(meta);
+  generateDays(data);
+  data.checklist = defaultChecklist();
+  trips[id] = data;
+  currentTripId = id;
+  currentTrip = data;
+  activeTab = 'apercu';
+  markDirty();
+  renderAll();
+}
+function updateTripMeta(patch){
+  Object.assign(currentTrip.meta, patch);
+  const idx = tripsIndex.find(t=>t.id===currentTripId);
+  if(idx) Object.assign(idx, patch);
+  generateDays(currentTrip);
+  markDirty();
+  renderAll();
+}
+function switchTrip(id){
+  if(!trips[id]){
+    console.warn('Données introuvables pour le voyage', id, '— reconstruction d\'un voyage vide pour éviter la perte d\'affichage.');
+    const idx = tripsIndex.find(t=>t.id===id);
+    trips[id] = defaultTripData(idx ? { name: idx.name, country: idx.country, startDate: idx.startDate, endDate: idx.endDate } : {});
+    generateDays(trips[id]);
+    trips[id].checklist = defaultChecklist();
+    markDirty();
+  }
+  currentTripId = id;
+  currentTrip = trips[id];
+  activeTab = 'apercu';
+  hiddenCats = new Set();
+  selectedPlaceId = null;
+  apercuSelectedDayId = null;
+  renderAll();
+}
+function deleteCurrentTrip(){
+  if(!confirm('Supprimer définitivement ce voyage et toutes ses données ?')) return;
+  delete trips[currentTripId];
+  tripsIndex = tripsIndex.filter(t=>t.id!==currentTripId);
+  currentTripId = tripsIndex.length ? tripsIndex[0].id : null;
+  currentTrip = currentTripId ? trips[currentTripId] : null;
+  markDirty();
+  renderAll();
+}
+
+
+// ---------------------------------------------------------------- generic item CRUD
+function addItem(listName, obj){
+  obj.id = genId();
+  currentTrip[listName].push(obj);
+  markDirty();
+  renderAll();
+}
+function updateItem(listName, id, patch){
+  const item = currentTrip[listName].find(x=>x.id===id);
+  if(item) Object.assign(item, patch);
+  markDirty();
+  renderAll();
+}
+function deleteItem(listName, id){
+  currentTrip[listName] = currentTrip[listName].filter(x=>x.id!==id);
+  // clean references in day steps
+  if(listName==='places' || listName==='transport'){
+    currentTrip.days.forEach(d=> d.steps = d.steps.filter(s => !(s.type===(listName==='places'?'place':'transport') && s.ref===id)));
+  }
+  markDirty();
+  renderAll();
+}
+
+// ---------------------------------------------------------------- geocoding
+async function geocode(query){
+  if(!query) return null;
+  try{
+    const res = await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&q=' + encodeURIComponent(query));
+    const data = await res.json();
+    if(data && data[0]) return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon), label: data[0].display_name };
+  }catch(e){ console.warn('geocode failed', e); }
+  return null;
+}
+
+// ---------------------------------------------------------------- dialog helper
+function openDialog(title, bodyHtml, onSubmit, submitLabel){
+  dialogTitle.textContent = title;
+  dialogBody.innerHTML = bodyHtml;
+  document.getElementById('vyDialogSubmit').textContent = submitLabel || 'Enregistrer';
+  dialogForm.onsubmit = async (e) => {
+    e.preventDefault();
+    const fd = new FormData(dialogForm);
+    await onSubmit(fd, dialogBody);
+  };
+  dialog.showModal();
+}
+
+// ================================================================ RENDER
+function renderAll(){
+  renderSidebar();
+  renderMain();
+}
+
+function renderSidebar(){
+  if(!tripsIndex.length){ tripListEl.innerHTML = '<div style="font-size:12px;color:var(--ink-soft);padding:6px 2px;">Aucun voyage pour le moment.</div>'; return; }
+  tripListEl.innerHTML = tripsIndex.map(t => {
+    const code = (t.country||t.name||'??').slice(0,3).toUpperCase();
+    const active = t.id===currentTripId ? 'active' : '';
+    return `<button class="vy-tripstamp ${active}" data-trip="${t.id}">
+      <span class="vy-stampcircle">${esc(code)}</span>
+      <span>
+        <div class="vy-tripname">${esc(t.name||'Sans titre')}</div>
+        <div class="vy-tripdates">${t.startDate?fmtDate(t.startDate):''}${t.endDate?' → '+fmtDate(t.endDate):''}</div>
+      </span>
+    </button>`;
+  }).join('');
+  tripListEl.querySelectorAll('[data-trip]').forEach(btn=>{
+    btn.addEventListener('click', ()=>switchTrip(btn.getAttribute('data-trip')));
+  });
+}
+
+function renderMain(){
+  if(!currentTrip){
+    mainEl.innerHTML = `<div class="vy-empty">
+      <h2>Préparez votre prochain voyage</h2>
+      <p>Créez un premier voyage pour organiser vos vols, hôtels, visites, transports et votre check-list de départ — pour le Japon ou n'importe quelle destination.</p>
+      <button class="vy-btn" id="vyEmptyCreate">+ Nouveau voyage</button>
+    </div>`;
+    document.getElementById('vyEmptyCreate').addEventListener('click', openNewTripDialog);
+    return;
+  }
+  const m = currentTrip.meta;
+  const daysToGo = m.startDate ? daysBetween(todayIso(), m.startDate) : null;
+  let countLabel, countText;
+  if(daysToGo===null){ countText='—'; countLabel='DÉPART'; }
+  else if(daysToGo>0){ countText='J-'+daysToGo; countLabel='avant le départ'; }
+  else if(daysToGo===0){ countText='J-0'; countLabel="c'est aujourd'hui !"; }
+  else { countText='J+'+Math.abs(daysToGo); countLabel='en cours / terminé'; }
+
+  const tabs = [
+    ['apercu','Aperçu'], ['vols','Vols'], ['hotels','Hôtels'], ['itineraire','Itinéraire'],
+    ['lieux','Lieux & Carte'], ['transport','Transport'], ['budget','Budget'], ['checklist','Checklist']
+  ];
+
+  mainEl.innerHTML = `
+    <div class="vy-boardingpass">
+      <div class="vy-bp-main">
+        <div class="vy-bp-eyebrow">Carte d'embarquement</div>
+        <div class="vy-bp-title">${esc(m.name||'Voyage sans titre')} <button type="button" class="vy-editbtn" id="vyEditTrip">Modifier</button></div>
+        <div class="vy-bp-sub">${esc(m.country||'')}${m.startDate?' · '+fmtDateLong(m.startDate):''}${m.endDate?' → '+fmtDateLong(m.endDate):''}</div>
+      </div>
+      <div class="vy-bp-divider"></div>
+      <div class="vy-bp-stub">
+        <div class="vy-bp-count">${countText}</div>
+        <div class="vy-bp-countlabel">${countLabel}</div>
+      </div>
+    </div>
+    <div class="vy-tabs">
+      ${tabs.map(([k,l])=>`<button class="vy-tab ${activeTab===k?'active':''}" data-tab="${k}">${l}</button>`).join('')}
+    </div>
+    <div class="vy-content" id="vyTabContent"></div>
+  `;
+  document.getElementById('vyEditTrip').addEventListener('click', openEditTripDialog);
+  mainEl.querySelectorAll('[data-tab]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{ activeTab = btn.getAttribute('data-tab'); renderMain(); });
+  });
+  renderTabContent();
+}
+
+function renderTabContent(){
+  const c = document.getElementById('vyTabContent');
+  if(!c) return;
+  if(activeTab==='apercu') return renderApercu(c);
+  if(activeTab==='vols') return renderVols(c);
+  if(activeTab==='hotels') return renderHotels(c);
+  if(activeTab==='itineraire') return renderItineraire(c);
+  if(activeTab==='lieux') return renderLieux(c);
+  if(activeTab==='transport') return renderTransport(c);
+  if(activeTab==='budget') return renderBudget(c);
+  if(activeTab==='checklist') return renderChecklist(c);
+}
+
+// ---------------------------------------------------------------- APERCU
+let apercuSelectedDayId = null;
+
+function renderApercu(c){
+  const t = currentTrip;
+  const today = todayIso();
+  const doneCount = t.checklist.filter(x=>x.done).length;
+  const pct = t.checklist.length ? Math.round(doneCount/t.checklist.length*100) : 0;
+
+  // Default selected day: first future day (or today), or first day if all past
+  if(!apercuSelectedDayId || !t.days.find(d=>d.id===apercuSelectedDayId)){
+    const upcoming = t.days.find(d=>d.date>=today);
+    apercuSelectedDayId = upcoming ? upcoming.id : (t.days[0] ? t.days[0].id : null);
+  }
+  const selectedDay = t.days.find(d=>d.id===apercuSelectedDayId) || null;
+
+  // Build day grid buttons
+  const dayGrid = t.days.length ? `
+    <div class="vy-day-grid" id="vyDayGrid">
+      ${t.days.map(d=>{
+        const past = d.date < today;
+        const active = d.id === apercuSelectedDayId;
+        const dots = d.steps.map(s=>{
+          let color = 'var(--ink-faint)';
+          if(s.type==='place'){ const p=t.places.find(x=>x.id===s.ref); color=p ? (CAT_COLORS[p.category]||CAT_COLORS.autre) : color; }
+          else if(s.type==='transport') color='var(--transit)';
+          return `<span class="d-dot" style="background:${color}"></span>`;
+        }).join('');
+        return `<button class="vy-day-btn${past?' past':''}${active?' active':''}" data-day-id="${d.id}">
+          <div class="d-num">${esc(d.label.replace(/[^0-9]/g,''))||d.label.slice(0,4)}</div>
+          <div class="d-label">${fmtDate(d.date)}</div>
+          ${d.steps.length?`<div class="d-steps">${dots}</div>`:''}
+        </button>`;
+      }).join('')}
+    </div>` : '<div class="vy-empty-hint" style="margin-bottom:18px;">Configurez les dates du voyage pour générer les jours.</div>';
+
+  // Day detail
+  let dayDetail = '';
+  if(selectedDay){
+    dayDetail = `<div class="vy-day-detail">
+      <h4>${esc(selectedDay.label)}</h4>
+      <span class="dt">${fmtDateLong(selectedDay.date)}</span>
+      ${selectedDay.notes?`<div class="vy-day-notes" style="font-style:italic;font-size:12.5px;color:var(--ink-soft);">${esc(selectedDay.notes)}</div>`:''}
+      ${selectedDay.steps.length ? selectedDay.steps.map((s,i)=>{
+        let icon='📝', label='', sub='';
+        if(s.type==='place'){ const p=t.places.find(x=>x.id===s.ref); icon=(CATS[p&&p.category]||CATS.autre).split(' ')[0]; label=p?p.name:'(lieu supprimé)'; sub=p&&p.notes||''; }
+        else if(s.type==='transport'){ const tr=t.transport.find(x=>x.id===s.ref); icon=(TRANSPORT_MODES[tr&&tr.mode]||'🚉').split(' ')[0]; label=tr?(tr.fromName+' → '+tr.toName):'(trajet supprimé)'; sub=tr?tr.line||'':''; }
+        else { label=s.text||''; }
+        return `<div class="vy-step">
+          <span class="stepnum">${i+1}</span>
+          <span class="steptype">${icon}</span>
+          <div class="stepcontent">${esc(label)}${sub?'<div class="stepsub">'+esc(sub)+'</div>':''}</div>
+        </div>`;
+      }).join('') : '<div style="color:var(--ink-faint);font-size:12.5px;">Aucune étape planifiée pour cette journée.</div>'}
+    </div>`;
+  }
+
+  c.innerHTML = `
+    <div class="vy-stats">
+      <div class="vy-stat" data-go-tab="vols">   <div class="n">${t.flights.length}</div><div class="l">Vols</div></div>
+      <div class="vy-stat" data-go-tab="hotels"> <div class="n">${t.hotels.length}</div><div class="l">Hôtels</div></div>
+      <div class="vy-stat" data-go-tab="lieux">  <div class="n">${t.places.length}</div><div class="l">Lieux à visiter</div></div>
+      <div class="vy-stat" data-go-tab="transport"><div class="n">${t.transport.length}</div><div class="l">Trajets</div></div>
+      <div class="vy-stat" data-go-tab="budget"><div class="n">${fmtMoney(computeBudgetTotals().grandTotal)}</div><div class="l">Dépensé</div></div>
+      <div class="vy-stat" data-go-tab="checklist"><div class="n">${pct}%</div><div class="l">Check-list faite</div></div>
+    </div>
+    <div class="vy-section-head"><h3>Jours du voyage</h3></div>
+    ${dayGrid}
+    ${dayDetail}
+    <div class="vy-trash-wrap">
+      <button class="vy-trash-btn" id="vyDeleteTrip" title="Supprimer ce voyage">🗑 Supprimer ce voyage</button>
+    </div>
+  `;
+
+  c.querySelectorAll('[data-go-tab]').forEach(el=>el.addEventListener('click', ()=>{
+    activeTab = el.getAttribute('data-go-tab');
+    renderMain();
+  }));
+  c.querySelectorAll('[data-day-id]').forEach(btn=>btn.addEventListener('click', ()=>{
+    apercuSelectedDayId = btn.getAttribute('data-day-id');
+    renderApercu(c);
+  }));
+  document.getElementById('vyDeleteTrip').addEventListener('click', deleteCurrentTrip);
+}
+
+// ---------------------------------------------------------------- VOLS — import billet (parsing helpers)
+const AIRPORTS = {
+  CDG:'Paris', ORY:'Paris', BVA:'Paris', LIL:'Lille', LYS:'Lyon', MRS:'Marseille', NCE:'Nice', TLS:'Toulouse',
+  BOD:'Bordeaux', NTE:'Nantes', SXB:'Strasbourg', RNS:'Rennes', BSL:'Bâle/Mulhouse',
+  LHR:'Londres', LGW:'Londres', LTN:'Londres', STN:'Londres', LCY:'Londres', MAN:'Manchester', EDI:'Édimbourg', GLA:'Glasgow',
+  DUB:'Dublin', AMS:'Amsterdam', BRU:'Bruxelles', LUX:'Luxembourg',
+  FRA:'Francfort', MUC:'Munich', BER:'Berlin', HAM:'Hambourg', DUS:'Düsseldorf', CGN:'Cologne', STR:'Stuttgart',
+  ZRH:'Zurich', GVA:'Genève', VIE:'Vienne',
+  MAD:'Madrid', BCN:'Barcelone', AGP:'Malaga', PMI:'Palma de Majorque', LIS:'Lisbonne', OPO:'Porto',
+  FCO:'Rome', MXP:'Milan', LIN:'Milan', VCE:'Venise', NAP:'Naples', BLQ:'Bologne', PSA:'Pise', CTA:'Catane',
+  ATH:'Athènes', IST:'Istanbul', SAW:'Istanbul',
+  CPH:'Copenhague', OSL:'Oslo', ARN:'Stockholm', HEL:'Helsinki', KEF:'Reykjavik',
+  WAW:'Varsovie', PRG:'Prague', BUD:'Budapest', OTP:'Bucarest',
+  DOH:'Doha', DXB:'Dubaï', AUH:'Abu Dhabi', TLV:'Tel Aviv', RUH:'Riyad',
+  JFK:'New York', EWR:'New York', LGA:'New York', BOS:'Boston', ORD:'Chicago', SFO:'San Francisco',
+  LAX:'Los Angeles', SEA:'Seattle', MIA:'Miami', ATL:'Atlanta', IAD:'Washington', YUL:'Montréal', YYZ:'Toronto', YVR:'Vancouver',
+  MEX:'Mexico', GRU:'São Paulo', GIG:'Rio de Janeiro', EZE:'Buenos Aires', SCL:'Santiago',
+  HND:'Tokyo', NRT:'Tokyo', KIX:'Osaka', ITM:'Osaka', NGO:'Nagoya', CTS:'Sapporo', FUK:'Fukuoka',
+  OKA:'Okinawa', KOJ:'Kagoshima', SDJ:'Sendai', HIJ:'Hiroshima', KMJ:'Kumamoto', KMQ:'Komatsu',
+  ICN:'Séoul', GMP:'Séoul', PUS:'Busan', PVG:'Shanghai', SHA:'Shanghai', PEK:'Pékin', PKX:'Pékin',
+  HKG:'Hong Kong', TPE:'Taipei', SIN:'Singapour', KUL:'Kuala Lumpur', BKK:'Bangkok', DMK:'Bangkok',
+  MNL:'Manille', CGK:'Jakarta', DPS:'Bali', HAN:'Hanoï', SGN:'Hô Chi Minh-Ville',
+  DEL:'New Delhi', BOM:'Mumbai', BLR:'Bangalore', MAA:'Chennai',
+  SYD:'Sydney', MEL:'Melbourne', BNE:'Brisbane', AKL:'Auckland', PER:'Perth',
+  CAI:'Le Caire', JNB:'Johannesburg', CPT:'Le Cap', NBO:'Nairobi', CMN:'Casablanca', RAK:'Marrakech',
+  TUN:'Tunis', ALG:'Alger', DKR:'Dakar'
+};
+const AIRLINE_NAMES = [
+  'Air France','KLM','Transavia','easyJet','Ryanair','Vueling','Volotea','British Airways','Iberia',
+  'Lufthansa','Swiss','Austrian Airlines','Brussels Airlines','SAS','Finnair','Norwegian','Wizz Air',
+  'Turkish Airlines','Aegean Airlines','TAP Air Portugal','Alitalia','ITA Airways','LOT Polish Airlines',
+  'Qatar Airways','Emirates','Etihad Airways','Saudia',
+  'ANA','All Nippon Airways','Japan Airlines','JAL','Korean Air','Asiana Airlines','China Airlines',
+  'EVA Air','Cathay Pacific','Singapore Airlines','Thai Airways','Malaysia Airlines','Garuda Indonesia',
+  'Vietnam Airlines','Philippine Airlines','Air China','China Eastern','China Southern',
+  'American Airlines','Delta Air Lines','United Airlines','Air Canada','JetBlue','Southwest Airlines',
+  'Qantas','Air New Zealand','LATAM','Aeroflot','Icelandair'
+];
+const MONTHS_FR = {janvier:1,février:2,fevrier:2,mars:3,avril:4,mai:5,juin:6,juillet:7,août:8,aout:8,septembre:9,octobre:10,novembre:11,décembre:12,decembre:12};
+const MONTHS_EN = {jan:1,january:1,feb:2,february:2,mar:3,march:3,apr:4,april:4,may:5,jun:6,june:6,jul:7,july:7,aug:8,august:8,sep:9,sept:9,september:9,oct:10,october:10,nov:11,november:11,dec:12,december:12};
+function pad2(n){ return String(n).padStart(2,'0'); }
+function normalizeDateToken(raw){
+  if(!raw) return null;
+  let m = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if(m) return `${m[1]}-${m[2]}-${m[3]}`;
+  m = raw.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})$/);
+  if(m){ return `${m[3]}-${pad2(m[2])}-${pad2(m[1])}`; }
+  m = raw.match(/^(\d{1,2})\s+([A-Za-zéûôàè]+)\.?\s+(\d{4})$/);
+  if(m){
+    const key = m[2].toLowerCase();
+    const mo = MONTHS_FR[key] || MONTHS_EN[key];
+    if(mo) return `${m[3]}-${pad2(mo)}-${pad2(m[1])}`;
+  }
+  return null;
+}
+function findDates(text){
+  const found = [];
+  const regexes = [
+    /\b\d{4}-\d{2}-\d{2}\b/g,
+    /\b\d{1,2}[\/\-.]\d{1,2}[\/\-.]\d{4}\b/g,
+    /\b\d{1,2}\s+[A-Za-zéûôàè]+\.?\s+\d{4}\b/g
+  ];
+  regexes.forEach(re=>{
+    for(const m of text.matchAll(re)){
+      const norm = normalizeDateToken(m[0]);
+      if(norm && !found.includes(norm)) found.push(norm);
+    }
+  });
+  return found;
+}
+function findTimes(text){
+  const found = [];
+  for(const m of text.matchAll(/\b([01]?\d|2[0-3])[:hH]([0-5]\d)\b/g)){
+    const t = `${pad2(m[1])}:${m[2]}`;
+    found.push(t);
+  }
+  return found;
+}
+function parseFlightText(text){
+  const result = { airline:'', flightNumber:'', confirmation:'', depCity:'', depAirport:'', depDatetime:'', arrCity:'', arrAirport:'', arrDatetime:'' };
+  if(!text) return result;
+
+  for(const name of AIRLINE_NAMES){ if(text.toLowerCase().includes(name.toLowerCase())){ result.airline = name; break; } }
+
+  const fnMatch = text.match(/\b([A-Z]{2})\s?-?\s?(\d{1,4})\b(?!\d)/);
+  if(fnMatch) result.flightNumber = fnMatch[1] + fnMatch[2];
+
+  const pnrMatch = text.match(/(?:PNR|r[ée]f[ée]rence(?:\s+de)?\s+r[ée]servation|booking\s+reference|confirmation\s+(?:code|number)|code\s+de\s+r[ée]servation)\s*[:\s]\s*([A-Z0-9]{5,8})/i);
+  if(pnrMatch) result.confirmation = pnrMatch[1].toUpperCase();
+
+  const codeMatches = [];
+  for(const m of text.matchAll(/\b[A-Z]{3}\b/g)){
+    if(AIRPORTS[m[0]] && !codeMatches.includes(m[0])) codeMatches.push(m[0]);
+  }
+  if(codeMatches[0]){ result.depAirport = codeMatches[0]; result.depCity = AIRPORTS[codeMatches[0]]; }
+  if(codeMatches[1]){ result.arrAirport = codeMatches[1]; result.arrCity = AIRPORTS[codeMatches[1]]; }
+
+  const dates = findDates(text);
+  const times = findTimes(text);
+  const depDate = dates[0] || '';
+  const arrDate = dates[1] || dates[0] || '';
+  const depTime = times[0] || '';
+  const arrTime = times[1] || '';
+  if(depDate && depTime) result.depDatetime = `${depDate}T${depTime}`;
+  if(arrDate && arrTime) result.arrDatetime = `${arrDate}T${arrTime}`;
+
+  return result;
+}
+
+// ---------------------------------------------------------------- VOLS
+function renderVols(c){
+  const t = currentTrip;
+  const groups = { aller: t.flights.filter(f=>f.direction==='aller'), retour: t.flights.filter(f=>f.direction==='retour') };
+  function group(dir, label){
+    const list = groups[dir];
+    return `<div style="margin-bottom:20px;">
+      <div class="vy-section-head"><h3>${label}</h3><button class="vy-btn small" data-add-flight="${dir}">+ Ajouter un vol</button></div>
+      ${list.length ? list.map(f=>flightCard(f)).join('') : '<div class="vy-empty-hint">Aucun vol '+label.toLowerCase()+' enregistré.</div>'}
+    </div>`;
+  }
+  c.innerHTML = `<div class="vy-section-head"><h3>Vols</h3><button class="vy-btn small" id="vyImportFlight">📄 Importer un billet</button></div>` + group('aller','Aller') + group('retour','Retour');
+  document.getElementById('vyImportFlight').addEventListener('click', ()=>openImportFlightDialog());
+  c.querySelectorAll('[data-add-flight]').forEach(b=>b.addEventListener('click', ()=>openFlightDialog(null, b.getAttribute('data-add-flight'))));
+  c.querySelectorAll('[data-edit-flight]').forEach(b=>b.addEventListener('click', ()=>openFlightDialog(b.getAttribute('data-edit-flight'))));
+  c.querySelectorAll('[data-del-flight]').forEach(b=>b.addEventListener('click', ()=>deleteItem('flights', b.getAttribute('data-del-flight'))));
+}
+function flightCard(f){
+  return `<div class="vy-ticket" style="margin-bottom:10px;">
+    <div class="vy-ticket-actions">
+      <button class="vy-iconbtn" data-edit-flight="${f.id}">✎</button>
+      <button class="vy-iconbtn" data-del-flight="${f.id}">✕</button>
+    </div>
+    <div class="vy-ticket-body">
+      <div class="vy-ticket-route">
+        <div class="vy-ticket-pt"><div class="city">${esc(f.depCity||f.depAirport||'?')}</div><div class="time">${esc(f.depAirport||'')} · ${f.depDatetime?new Date(f.depDatetime).toLocaleString('fr-FR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):''}</div></div>
+        <div class="vy-ticket-arrow">✈ →</div>
+        <div class="vy-ticket-pt"><div class="city">${esc(f.arrCity||f.arrAirport||'?')}</div><div class="time">${esc(f.arrAirport||'')} · ${f.arrDatetime?new Date(f.arrDatetime).toLocaleString('fr-FR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):''}</div></div>
+      </div>
+    </div>
+    <div class="vy-ticket-meta">
+      ${f.airline?'<span>'+esc(f.airline)+'</span>':''}
+      ${f.flightNumber?'<span style="font-weight:600;">'+esc(f.flightNumber)+'</span>':''}
+      ${f.confirmation?'<span>Réf. '+esc(f.confirmation)+'</span>':''}
+      ${f.price!=null?'<span style="font-weight:600;color:var(--vermilion-dark);">'+fmtMoney(f.price)+'</span>':''}
+      ${f.notes?'<span>'+esc(f.notes)+'</span>':''}
+    </div>
+  </div>`;
+}
+function openImportFlightDialog(){
+  openDialog('Importer un billet ✈', `
+    <div class="vy-dialog-section">
+      <div class="vy-dialog-section-title">Sens du vol</div>
+      <div class="vy-field" style="margin-bottom:0"><select name="direction"><option value="aller">Aller</option><option value="retour">Retour</option></select></div>
+    </div>
+    <div class="vy-dialog-section">
+      <div class="vy-dialog-section-title">Fichier PDF (billet, e-ticket, confirmation…)</div>
+      <div class="vy-field" style="margin-bottom:0">
+        <input type="file" name="pdfFile" accept="application/pdf">
+        <div id="vyImportStatus" style="font-size:12px;color:var(--ink-soft);margin-top:6px;"></div>
+      </div>
+    </div>
+    <div class="vy-dialog-section">
+      <div class="vy-dialog-section-title">Ou collez le texte de la confirmation</div>
+      <div class="vy-field" style="margin-bottom:0"><textarea name="pasteText" rows="8" placeholder="Collez ici le texte de votre email ou billet…"></textarea></div>
+    </div>
+    <div class="vy-dialog-section" style="margin-bottom:0;">
+      <div style="font-size:12px;color:var(--ink-soft);">L'extraction est automatique mais imparfaite : vous pourrez vérifier et corriger chaque champ avant d'enregistrer.</div>
+    </div>
+  `, async (fd, body)=>{
+    const direction = fd.get('direction');
+    const file = fd.get('pdfFile');
+    const statusEl = body.querySelector('#vyImportStatus');
+    let text = (fd.get('pasteText')||'').trim();
+    if(file && file.size){
+      try{
+        if(statusEl) statusEl.textContent = 'Lecture du PDF…';
+        const pdfText = await extractPdfText(file);
+        text = (pdfText + '\n' + text).trim();
+      }catch(e){
+        console.warn('PDF extraction failed', e);
+        if(!text){
+          if(statusEl) statusEl.textContent = 'Impossible de lire ce PDF — collez le texte à la place.';
+          return;
+        }
+      }
+    }
+    if(!text){
+      if(statusEl) statusEl.textContent = 'Ajoutez un PDF ou collez du texte à analyser.';
+      return;
+    }
+    const parsed = parseFlightText(text);
+    const notePreview = text.replace(/\s+/g,' ').trim().slice(0,2000);
+    parsed.notes = 'Importé automatiquement — vérifiez les champs.\n\n' + notePreview;
+    dialog.close();
+    openFlightDialog(null, direction, parsed);
+  }, 'Analyser →');
+}
+function openFlightDialog(id, direction, prefill){
+  const existing = id ? currentTrip.flights.find(x=>x.id===id) : Object.assign({ direction, airline:'', flightNumber:'', depCity:'', depAirport:'', depDatetime:'', arrCity:'', arrAirport:'', arrDatetime:'', confirmation:'', notes:'' }, prefill||{});
+  const dir = existing.direction === 'aller' ? 'Aller ✈' : 'Retour ✈';
+  openDialog((id?'Modifier le vol':'Nouveau vol') + ' — ' + dir, `
+    <div class="vy-dialog-section">
+      <div class="vy-dialog-section-title">Compagnie & numéro</div>
+      <div class="vy-row">
+        <div class="vy-field">
+          <label>Compagnie</label>
+          <div class="vy-input-icon-wrap"><span class="ico">🏢</span><input name="airline" value="${esc(existing.airline)}" placeholder="ANA, Air France…"></div>
+        </div>
+        <div class="vy-field">
+          <label>N° de vol</label>
+          <div class="vy-input-icon-wrap"><span class="ico">✈</span><input name="flightNumber" value="${esc(existing.flightNumber)}" placeholder="AF276"></div>
+        </div>
+      </div>
+      <div class="vy-row">
+        <div class="vy-field" style="margin-bottom:0">
+          <label>Référence réservation</label>
+          <div class="vy-input-icon-wrap"><span class="ico">🔖</span><input name="confirmation" value="${esc(existing.confirmation)}" placeholder="ABC123"></div>
+        </div>
+        <div class="vy-field" style="margin-bottom:0">
+          <label>Prix (aller-retour ou ce vol)</label>
+          <div class="vy-input-icon-wrap"><span class="ico">💰</span><input type="number" step="0.01" min="0" name="price" value="${existing.price??''}" placeholder="0.00"></div>
+        </div>
+      </div>
+    </div>
+    <div class="vy-dialog-section">
+      <div class="vy-dialog-section-title">Départ</div>
+      <div class="vy-row">
+        <div class="vy-field">
+          <label>Ville</label>
+          <div class="vy-input-icon-wrap"><span class="ico">🏙</span><input name="depCity" value="${esc(existing.depCity)}" placeholder="Paris"></div>
+        </div>
+        <div class="vy-field">
+          <label>Aéroport</label>
+          <div class="vy-input-icon-wrap"><span class="ico">🛫</span><input name="depAirport" value="${esc(existing.depAirport)}" placeholder="CDG"></div>
+        </div>
+      </div>
+      <div class="vy-field" style="margin-bottom:0">
+        <label>Date & heure</label>
+        <input type="datetime-local" name="depDatetime" value="${esc(existing.depDatetime)}">
+      </div>
+    </div>
+    <div class="vy-dialog-section">
+      <div class="vy-dialog-section-title">Arrivée</div>
+      <div class="vy-row">
+        <div class="vy-field">
+          <label>Ville</label>
+          <div class="vy-input-icon-wrap"><span class="ico">🏙</span><input name="arrCity" value="${esc(existing.arrCity)}" placeholder="Tokyo"></div>
+        </div>
+        <div class="vy-field">
+          <label>Aéroport</label>
+          <div class="vy-input-icon-wrap"><span class="ico">🛬</span><input name="arrAirport" value="${esc(existing.arrAirport)}" placeholder="HND"></div>
+        </div>
+      </div>
+      <div class="vy-field" style="margin-bottom:0">
+        <label>Date & heure</label>
+        <input type="datetime-local" name="arrDatetime" value="${esc(existing.arrDatetime)}">
+      </div>
+    </div>
+    <div class="vy-dialog-section">
+      <div class="vy-dialog-section-title">Notes</div>
+      <div class="vy-field" style="margin-bottom:0"><textarea name="notes" rows="2" placeholder="Bagages en soute, repas compris…">${esc(existing.notes)}</textarea></div>
+    </div>
+  `, async (fd)=>{
+    const price = fd.get('price') ? parseFloat(fd.get('price')) : null;
+    const patch = { direction: existing.direction, airline: fd.get('airline'), flightNumber: fd.get('flightNumber'), confirmation: fd.get('confirmation'), price, depCity: fd.get('depCity'), depAirport: fd.get('depAirport'), depDatetime: fd.get('depDatetime'), arrCity: fd.get('arrCity'), arrAirport: fd.get('arrAirport'), arrDatetime: fd.get('arrDatetime'), notes: fd.get('notes') };
+    if(id) await updateItem('flights', id, patch); else await addItem('flights', patch);
+    dialog.close();
+  });
+}
+
+// ---------------------------------------------------------------- HOTELS
+function renderHotels(c){
+  const t = currentTrip;
+  c.innerHTML = `<div class="vy-section-head"><h3>Hôtels réservés</h3><button class="vy-btn small" id="vyAddHotel">+ Ajouter un hôtel</button></div>
+  ${t.hotels.length ? '<div class="vy-grid">'+t.hotels.map(hotelCard).join('')+'</div>' : '<div class="vy-empty-hint">Aucun hôtel enregistré.</div>'}`;
+  document.getElementById('vyAddHotel').addEventListener('click', ()=>openHotelDialog(null));
+  c.querySelectorAll('[data-edit-hotel]').forEach(b=>b.addEventListener('click', ()=>openHotelDialog(b.getAttribute('data-edit-hotel'))));
+  c.querySelectorAll('[data-del-hotel]').forEach(b=>b.addEventListener('click', ()=>deleteItem('hotels', b.getAttribute('data-del-hotel'))));
+}
+function hotelCard(h){
+  const nights = (h.checkin && h.checkout) ? daysBetween(h.checkin,h.checkout) : null;
+  return `<div class="vy-hotel">
+    <div class="vy-ticket-actions"><button class="vy-iconbtn" data-edit-hotel="${h.id}">✎</button><button class="vy-iconbtn" data-del-hotel="${h.id}">✕</button></div>
+    <h4>${esc(h.name||'Hôtel')}</h4>
+    <div class="addr">${esc(h.address||'')}</div>
+    <div class="dates">${h.checkin?fmtDate(h.checkin):'?'} → ${h.checkout?fmtDate(h.checkout):'?'} ${nights!=null?'<span class="nights">'+nights+' nuit'+(nights>1?'s':'')+'</span>':''}</div>
+    ${h.confirmation?'<div class="conf">Réf. '+esc(h.confirmation)+'</div>':''}
+    ${h.price!=null?'<div class="conf" style="font-weight:600;color:var(--vermilion-dark);">'+fmtMoney(h.price)+'</div>':''}
+    ${h.notes?'<div class="vy-place-notes">'+esc(h.notes)+'</div>':''}
+  </div>`;
+}
+function openHotelDialog(id){
+  const existing = id ? currentTrip.hotels.find(x=>x.id===id) : { name:'', address:'', checkin:'', checkout:'', confirmation:'', notes:'', lat:null, lng:null };
+  openDialog(id?"Modifier l'hôtel":'Ajouter un hôtel 🏨', `
+    <div class="vy-dialog-section">
+      <div class="vy-dialog-section-title">Informations</div>
+      <div class="vy-field">
+        <label>Nom de l'hôtel</label>
+        <div class="vy-input-icon-wrap"><span class="ico">🏨</span><input name="name" value="${esc(existing.name)}" required placeholder="Dormy Inn Shinjuku"></div>
+      </div>
+      <div class="vy-field">
+        <label>Adresse</label>
+        <div class="vy-input-icon-wrap"><span class="ico">📍</span><input name="address" value="${esc(existing.address)}" placeholder="Adresse — localise automatiquement sur la carte"></div>
+      </div>
+      <div class="vy-row">
+        <div class="vy-field" style="margin-bottom:0">
+          <label>Référence réservation</label>
+          <div class="vy-input-icon-wrap"><span class="ico">🔖</span><input name="confirmation" value="${esc(existing.confirmation)}" placeholder="Booking, Expedia…"></div>
+        </div>
+        <div class="vy-field" style="margin-bottom:0">
+          <label>Prix total du séjour</label>
+          <div class="vy-input-icon-wrap"><span class="ico">💰</span><input type="number" step="0.01" min="0" name="price" value="${existing.price??''}" placeholder="0.00"></div>
+        </div>
+      </div>
+    </div>
+    <div class="vy-dialog-section">
+      <div class="vy-dialog-section-title">Dates de séjour</div>
+      <div class="vy-date-pair">
+        <div class="vy-field" style="margin-bottom:0"><label>Check-in</label><input type="date" name="checkin" value="${esc(existing.checkin)}"></div>
+        <div class="vy-field" style="margin-bottom:0"><label>Check-out</label><input type="date" name="checkout" value="${esc(existing.checkout)}"></div>
+      </div>
+    </div>
+    <div class="vy-dialog-section">
+      <div class="vy-dialog-section-title">Notes</div>
+      <div class="vy-field" style="margin-bottom:0"><textarea name="notes" rows="2" placeholder="Petit-déjeuner inclus, parking, accès…">${esc(existing.notes)}</textarea></div>
+    </div>
+  `, async (fd)=>{
+    const address = fd.get('address');
+    let lat = existing.lat, lng = existing.lng;
+    if(address){ const g = await geocode(address); if(g){ lat=g.lat; lng=g.lng; } }
+    const price = fd.get('price') ? parseFloat(fd.get('price')) : null;
+    const patch = { name: fd.get('name'), address, checkin: fd.get('checkin'), checkout: fd.get('checkout'), confirmation: fd.get('confirmation'), price, notes: fd.get('notes'), lat, lng };
+    if(id) await updateItem('hotels', id, patch); else await addItem('hotels', patch);
+    dialog.close();
+  });
+}
+
+// ---------------------------------------------------------------- LIEUX & CARTE
+let hiddenCats = new Set();
+let selectedPlaceId = null;
+
+function renderLieux(c){
+  const t = currentTrip;
+  const usedCats = Array.from(new Set(t.places.map(p=>p.category||'autre')));
+  const visiblePlaces = t.places.filter(p=>!hiddenCats.has(p.category||'autre'));
+  c.innerHTML = `
+    <div class="vy-section-head"><h3>Lieux & carte</h3><button class="vy-btn small" id="vyAddPlace">+ Ajouter un lieu</button></div>
+    <div class="vy-map-layout">
+      <div class="vy-map-side">
+        ${usedCats.length ? `<div class="vy-map-legend">${usedCats.map(cat=>{
+          const color = CAT_COLORS[cat]||CAT_COLORS.autre;
+          const active = !hiddenCats.has(cat);
+          return `<button type="button" class="vy-legend-pill ${active?'active':''}" data-cat-filter="${cat}" style="--pill-color:${color}">
+            <span class="vy-legend-dot" style="background:${color}"></span>${esc((CATS[cat]||CATS.autre).split(' ').slice(1).join(' '))}
+          </button>`;
+        }).join('')}</div>` : ''}
+        ${visiblePlaces.length ? visiblePlaces.map(p=>`
+          <div class="vy-place-row ${selectedPlaceId===p.id?'selected':''}" data-place-row="${p.id}">
+            <span class="vy-place-cat" style="background:${(CAT_COLORS[p.category]||CAT_COLORS.autre)}22; color:${CAT_COLORS[p.category]||CAT_COLORS.autre};">${(CATS[p.category]||CATS.autre).split(' ')[0]}</span>
+            <div style="flex:1;min-width:0;">
+              <div class="vy-place-name">${esc(p.name)}</div>
+              ${p.notes?'<div class="vy-place-notes">'+esc(p.notes)+'</div>':''}
+              ${(p.lat&&p.lng)?'<div class="vy-place-coords">'+p.lat.toFixed(4)+', '+p.lng.toFixed(4)+'</div>':'<div class="vy-place-coords">Pas de coordonnées</div>'}
+            </div>
+            <div class="vy-step-actions"><button class="vy-iconbtn" data-edit-place="${p.id}">✎</button><button class="vy-iconbtn" data-del-place="${p.id}">✕</button></div>
+          </div>`).join('') : `<div class="vy-empty-hint">${t.places.length?'Aucun lieu dans les catégories sélectionnées.':'Aucun lieu ajouté pour le moment.'}</div>`}
+        <div class="vy-attrib">Carte © OpenStreetMap contributors</div>
+      </div>
+      <div id="vy-leaflet-map"></div>
+    </div>
+  `;
+  document.getElementById('vyAddPlace').addEventListener('click', ()=>openPlaceDialog(null));
+  c.querySelectorAll('[data-edit-place]').forEach(b=>b.addEventListener('click', (e)=>{ e.stopPropagation(); openPlaceDialog(b.getAttribute('data-edit-place')); }));
+  c.querySelectorAll('[data-del-place]').forEach(b=>b.addEventListener('click', (e)=>{ e.stopPropagation(); deleteItem('places', b.getAttribute('data-del-place')); }));
+  c.querySelectorAll('[data-cat-filter]').forEach(btn=>btn.addEventListener('click', ()=>{
+    const cat = btn.getAttribute('data-cat-filter');
+    if(hiddenCats.has(cat)) hiddenCats.delete(cat); else hiddenCats.add(cat);
+    renderLieux(c);
+  }));
+  c.querySelectorAll('[data-place-row]').forEach(row=>row.addEventListener('click', (e)=>{
+    if(e.target.closest('.vy-step-actions')) return;
+    focusPlaceOnMap(row.getAttribute('data-place-row'));
+  }));
+  ensureLeaflet().then(drawMap);
+}
+function focusPlaceOnMap(id){
+  selectedPlaceId = id;
+  document.querySelectorAll('.vy-place-row').forEach(r=>r.classList.toggle('selected', r.getAttribute('data-place-row')===id));
+  const p = currentTrip.places.find(x=>x.id===id);
+  if(!p || !p.lat || !p.lng || !mapObj) return;
+  mapObj.flyTo([p.lat, p.lng], Math.max(mapObj.getZoom(), 15), { duration: 0.6 });
+  const marker = placeMarkers[id];
+  if(marker) marker.openPopup();
+}
+function openPlaceDialog(id){
+  const existing = id ? currentTrip.places.find(x=>x.id===id) : { name:'', category:'autre', notes:'', lat:null, lng:null };
+  openDialog(id?'Modifier le lieu':'Ajouter un lieu 📍', `
+    <div class="vy-dialog-section">
+      <div class="vy-dialog-section-title">Lieu</div>
+      <div class="vy-field">
+        <label>Nom</label>
+        <div class="vy-input-icon-wrap"><span class="ico">🔍</span><input name="name" value="${esc(existing.name)}" required placeholder="Fushimi Inari-taisha, Shinjuku Gyoen…"></div>
+      </div>
+      <div class="vy-field" style="margin-bottom:0">
+        <label>Catégorie</label>
+        <select name="category">${Object.entries(CATS).map(([k,v])=>`<option value="${k}" ${existing.category===k?'selected':''}>${v}</option>`).join('')}</select>
+      </div>
+    </div>
+    <div class="vy-dialog-section">
+      <div class="vy-dialog-section-title">Coordonnées <span style="font-weight:400;text-transform:none;letter-spacing:0">(auto si vide)</span></div>
+      <div class="vy-date-pair">
+        <div class="vy-field" style="margin-bottom:0"><label>Latitude</label><input name="lat" value="${existing.lat??''}" placeholder="35.6762"></div>
+        <div class="vy-field" style="margin-bottom:0"><label>Longitude</label><input name="lng" value="${existing.lng??''}" placeholder="139.6503"></div>
+      </div>
+    </div>
+    <div class="vy-dialog-section">
+      <div class="vy-dialog-section-title">Notes</div>
+      <div class="vy-field" style="margin-bottom:0"><textarea name="notes" rows="2" placeholder="Horaires, conseils pratiques…">${esc(existing.notes)}</textarea></div>
+    </div>
+  `, async (fd)=>{
+    let lat = fd.get('lat') ? parseFloat(fd.get('lat')) : null;
+    let lng = fd.get('lng') ? parseFloat(fd.get('lng')) : null;
+    const name = fd.get('name');
+    if((!lat || !lng) && name){ const g = await geocode(name); if(g){ lat=g.lat; lng=g.lng; } }
+    const patch = { name, category: fd.get('category'), notes: fd.get('notes'), lat, lng };
+    if(id) await updateItem('places', id, patch); else await addItem('places', patch);
+    dialog.close();
+  });
+}
+
+// ---------------------------------------------------------------- TRANSPORT
+function renderTransport(c){
+  const t = currentTrip;
+  const sorted = [...t.transport].sort((a,b)=> (a.date||'').localeCompare(b.date||'') || (a.time||'').localeCompare(b.time||''));
+  c.innerHTML = `<div class="vy-section-head"><h3>Transports sur place</h3><button class="vy-btn small" id="vyAddTransport">+ Ajouter un trajet</button></div>
+  ${sorted.length ? sorted.map(transportCard).join('') : '<div class="vy-empty-hint">Aucun trajet enregistré. Ajoutez vos trains, métros ou bus pour les retrouver sur la carte.</div>'}`;
+  document.getElementById('vyAddTransport').addEventListener('click', ()=>openTransportDialog(null));
+  c.querySelectorAll('[data-edit-transport]').forEach(b=>b.addEventListener('click', ()=>openTransportDialog(b.getAttribute('data-edit-transport'))));
+  c.querySelectorAll('[data-del-transport]').forEach(b=>b.addEventListener('click', ()=>deleteItem('transport', b.getAttribute('data-del-transport'))));
+}
+function transportCard(tr){
+  const day = currentTrip.days.find(d=>d.id===tr.dayId);
+  return `<div class="vy-ticket" style="margin-bottom:10px;">
+    <div class="vy-ticket-actions"><button class="vy-iconbtn" data-edit-transport="${tr.id}">✎</button><button class="vy-iconbtn" data-del-transport="${tr.id}">✕</button></div>
+    <div class="vy-ticket-body">
+      <div class="vy-ticket-route">
+        <div class="vy-ticket-pt"><div class="city">${esc(tr.fromName||'?')}</div><div class="time">Départ${tr.time?' · '+esc(tr.time):''}</div></div>
+        <div class="vy-ticket-arrow">→</div>
+        <div class="vy-ticket-pt"><div class="city">${esc(tr.toName||'?')}</div><div class="time">Arrivée${tr.arrivalTime?' · '+esc(tr.arrivalTime):''}</div></div>
+      </div>
+      <span class="vy-ticket-tag">${(TRANSPORT_MODES[tr.mode]||tr.mode||'')}</span>
+    </div>
+    <div class="vy-ticket-meta">
+      ${tr.line?'<span style="font-weight:600;">'+esc(tr.line)+'</span>':''}
+      ${tr.date?'<span>'+fmtDate(tr.date)+(tr.time?' · '+esc(tr.time):'')+'</span>':''}
+      ${day?'<span>'+esc(day.label)+'</span>':''}
+      ${tr.price!=null?'<span style="font-weight:600;color:var(--vermilion-dark);">'+fmtMoney(tr.price)+'</span>':''}
+      ${tr.notes?'<span>'+esc(tr.notes)+'</span>':''}
+    </div>
+  </div>`;
+}
+function openTransportDialog(id){
+  const existing = id ? currentTrip.transport.find(x=>x.id===id) : { mode:'train', line:'', fromName:'', toName:'', date:'', time:'', arrivalTime:'', notes:'', dayId:'', fromLat:null, fromLng:null, toLat:null, toLng:null };
+  openDialog(id?'Modifier le trajet':'Ajouter un trajet 🚉', `
+    <div class="vy-dialog-section">
+      <div class="vy-dialog-section-title">Mode & ligne</div>
+      <div class="vy-row">
+        <div class="vy-field" style="margin-bottom:0"><label>Mode</label><select name="mode">${Object.entries(TRANSPORT_MODES).map(([k,v])=>`<option value="${k}" ${existing.mode===k?'selected':''}>${v}</option>`).join('')}</select></div>
+        <div class="vy-field" style="margin-bottom:0">
+          <label>Ligne / compagnie</label>
+          <div class="vy-input-icon-wrap"><span class="ico">🏷</span><input name="line" value="${esc(existing.line)}" placeholder="JR Yamanote Line…"></div>
+        </div>
+      </div>
+      <div class="vy-field" style="margin-bottom:0;margin-top:10px;">
+        <label>Prix</label>
+        <div class="vy-input-icon-wrap"><span class="ico">💰</span><input type="number" step="0.01" min="0" name="price" value="${existing.price??''}" placeholder="0.00"></div>
+      </div>
+    </div>
+    <div class="vy-dialog-section">
+      <div class="vy-dialog-section-title">Itinéraire</div>
+      <div class="vy-field">
+        <label>Départ</label>
+        <div class="vy-input-icon-wrap"><span class="ico">🟢</span><input name="fromName" value="${esc(existing.fromName)}" placeholder="Gare de Kyoto"></div>
+      </div>
+      <div class="vy-field" style="margin-bottom:0">
+        <label>Arrivée</label>
+        <div class="vy-input-icon-wrap"><span class="ico">🔴</span><input name="toName" value="${esc(existing.toName)}" placeholder="Gare d'Osaka"></div>
+      </div>
+    </div>
+    <div class="vy-dialog-section">
+      <div class="vy-dialog-section-title">Date & heure</div>
+      <div class="vy-date-pair" style="margin-bottom:0; grid-template-columns: 1fr 1fr 1fr;">
+        <div class="vy-field" style="margin-bottom:0"><label>Date</label><input type="date" name="date" value="${esc(existing.date)}"></div>
+        <div class="vy-field" style="margin-bottom:0"><label>Heure départ</label><input type="time" name="time" value="${esc(existing.time)}"></div>
+        <div class="vy-field" style="margin-bottom:0"><label>Heure arrivée</label><input type="time" name="arrivalTime" value="${esc(existing.arrivalTime)}"></div>
+      </div>
+    </div>
+    <div class="vy-dialog-section">
+      <div class="vy-dialog-section-title">Notes</div>
+      <div class="vy-field" style="margin-bottom:0"><textarea name="notes" rows="2" placeholder="Numéro de voie, correspondance…">${esc(existing.notes)}</textarea></div>
+    </div>
+  `, async (fd)=>{
+    const fromName = fd.get('fromName'), toName = fd.get('toName');
+    let fromLat=existing.fromLat, fromLng=existing.fromLng, toLat=existing.toLat, toLng=existing.toLng;
+    if(fromName && fromName !== existing.fromName){ const g = await geocode(fromName); if(g){ fromLat=g.lat; fromLng=g.lng; } }
+    if(toName && toName !== existing.toName){ const g2 = await geocode(toName); if(g2){ toLat=g2.lat; toLng=g2.lng; } }
+    const price = fd.get('price') ? parseFloat(fd.get('price')) : null;
+    const patch = { mode: fd.get('mode'), line: fd.get('line'), fromName, toName, date: fd.get('date'), time: fd.get('time'), arrivalTime: fd.get('arrivalTime'), dayId: existing.dayId, price, notes: fd.get('notes'), fromLat, fromLng, toLat, toLng };
+    if(id) await updateItem('transport', id, patch); else await addItem('transport', patch);
+    dialog.close();
+  });
+}
+
+// ---------------------------------------------------------------- ITINERAIRE
+function renderItineraire(c){
+  const t = currentTrip;
+  if(!t.meta.startDate || !t.meta.endDate){
+    c.innerHTML = '<div class="vy-empty-hint">Renseignez les dates de début et de fin du voyage (bouton "Modifier" en haut) pour générer les journées.</div>';
+    return;
+  }
+  c.innerHTML = `<div class="vy-section-head"><h3>Itinéraire jour par jour</h3></div>` + t.days.map(d=>dayBlock(d)).join('');
+  c.querySelectorAll('[data-add-step]').forEach(b=>b.addEventListener('click', ()=>openStepDialog(b.getAttribute('data-add-step'))));
+  c.querySelectorAll('[data-del-step]').forEach(b=>b.addEventListener('click', ()=>{
+    const [dayId, stepId] = b.getAttribute('data-del-step').split('|');
+    const day = t.days.find(x=>x.id===dayId);
+    day.steps = day.steps.filter(s=>s.id!==stepId);
+    markDirty();
+    renderAll();
+  }));
+  c.querySelectorAll('[data-move-step]').forEach(b=>b.addEventListener('click', ()=>{
+    const [dayId, stepId, dir] = b.getAttribute('data-move-step').split('|');
+    const day = t.days.find(x=>x.id===dayId);
+    const idx = day.steps.findIndex(s=>s.id===stepId);
+    const swap = dir==='up' ? idx-1 : idx+1;
+    if(swap<0 || swap>=day.steps.length) return;
+    [day.steps[idx], day.steps[swap]] = [day.steps[swap], day.steps[idx]];
+    markDirty();
+    renderAll();
+  }));
+  c.querySelectorAll('[data-day-notes]').forEach(ta=>ta.addEventListener('change', ()=>{
+    const day = t.days.find(x=>x.id===ta.getAttribute('data-day-notes'));
+    day.notes = ta.value;
+    markDirty();
+  }));
+  c.querySelectorAll('[data-day-label]').forEach(inp=>inp.addEventListener('change', ()=>{
+    const day = t.days.find(x=>x.id===inp.getAttribute('data-day-label'));
+    day.label = inp.value || day.label;
+    markDirty();
+    renderAll();
+  }));
+}
+function stepLine(day, s){
+  let icon='📝', content='', sub='';
+  if(s.type==='place'){ const p = currentTrip.places.find(x=>x.id===s.ref); icon=(CATS[p&&p.category]||CATS.autre).split(' ')[0]; content = p?p.name:'(lieu supprimé)'; sub = p&&p.notes||''; }
+  else if(s.type==='transport'){ const tr = currentTrip.transport.find(x=>x.id===s.ref); icon=(TRANSPORT_MODES[tr&&tr.mode]||'🚉').split(' ')[0]; content = tr?(tr.fromName+' → '+tr.toName):'(trajet supprimé)'; sub = tr?(tr.line||''):''; }
+  else { content = s.text||''; }
+  return `<div class="vy-step">
+    <span class="steptype">${icon}</span>
+    <div class="stepcontent">${esc(content)}${sub?'<div class="stepsub">'+esc(sub)+'</div>':''}</div>
+    <div class="vy-step-actions">
+      <button class="vy-iconbtn" data-move-step="${day.id}|${s.id}|up">↑</button>
+      <button class="vy-iconbtn" data-move-step="${day.id}|${s.id}|down">↓</button>
+      <button class="vy-iconbtn" data-del-step="${day.id}|${s.id}">✕</button>
+    </div>
+  </div>`;
+}
+function dayBlock(d){
+  return `<div class="vy-day">
+    <div class="vy-day-head">
+      <input class="vy-editbtn" style="all:unset;font-family:var(--font-display);font-weight:600;font-size:15px;border-bottom:1px dashed transparent;" data-day-label="${d.id}" value="${esc(d.label)}">
+      <span class="dt">${fmtDateLong(d.date)}</span>
+    </div>
+    <div class="vy-day-body">
+      <textarea data-day-notes="${d.id}" placeholder="Notes sur la journée…" rows="1" style="margin-bottom:10px;">${esc(d.notes)}</textarea>
+      ${d.steps.length ? d.steps.map(s=>stepLine(d,s)).join('') : '<div style="color:var(--ink-faint);font-size:12.5px;padding:6px 0;">Aucune étape.</div>'}
+      <button class="vy-btn ghost small" data-add-step="${d.id}" style="margin-top:6px;">+ Ajouter une étape</button>
+    </div>
+  </div>`;
+}
+function openStepDialog(dayId){
+  openDialog('Ajouter une étape', `
+    <div class="vy-dialog-section">
+      <div class="vy-dialog-section-title">Type</div>
+      <div class="vy-field" style="margin-bottom:0">
+        <select name="type" id="vyStepType">
+          <option value="place">📍 Lieu à visiter</option>
+          <option value="transport">🚉 Transport</option>
+          <option value="note">📝 Note libre</option>
+        </select>
+      </div>
+    </div>
+    <div class="vy-dialog-section" id="vyStepRefWrap">
+      <div class="vy-dialog-section-title" id="vyStepRefLabel">Lieu</div>
+      <div class="vy-field" style="margin-bottom:0">
+        <select name="ref">${currentTrip.places.map(p=>`<option value="${p.id}">${esc((CATS[p.category]||CATS.autre).split(' ')[0])} ${esc(p.name)}</option>`).join('') || '<option value="">Aucun lieu — ajoutez-en un dans l\'onglet Lieux</option>'}</select>
+      </div>
+    </div>
+    <div class="vy-dialog-section" id="vyStepTextWrap" style="display:none;">
+      <div class="vy-dialog-section-title">Texte libre</div>
+      <div class="vy-field" style="margin-bottom:0"><input name="text" placeholder="Petit-déjeuner à l'hôtel, temps libre…"></div>
+    </div>
+  `, async (fd)=>{
+    const type = fd.get('type');
+    const step = { id: genId(), type };
+    if(type==='note') step.text = fd.get('text');
+    else step.ref = fd.get('ref');
+    const day = currentTrip.days.find(x=>x.id===dayId);
+    day.steps.push(step);
+    markDirty();
+    dialog.close();
+    renderAll();
+  }, 'Ajouter');
+  const sel = document.getElementById('vyStepType');
+  sel.addEventListener('change', ()=>{
+    const refWrap = document.getElementById('vyStepRefWrap');
+    const textWrap = document.getElementById('vyStepTextWrap');
+    const refLabel = document.getElementById('vyStepRefLabel');
+    if(sel.value==='note'){ refWrap.style.display='none'; textWrap.style.display='block'; }
+    else {
+      refWrap.style.display='block'; textWrap.style.display='none';
+      const isPlace = sel.value==='place';
+      refLabel.textContent = isPlace ? 'Lieu' : 'Trajet';
+      const list = isPlace ? currentTrip.places : currentTrip.transport;
+      const sel2 = refWrap.querySelector('select');
+      sel2.innerHTML = list.map(x=>{
+        const label = isPlace
+          ? `${(CATS[x.category]||CATS.autre).split(' ')[0]} ${x.name}`
+          : `${(TRANSPORT_MODES[x.mode]||'').split(' ')[0]} ${x.fromName} → ${x.toName}`;
+        return `<option value="${x.id}">${esc(label)}</option>`;
+      }).join('') || '<option value="">Aucun disponible</option>';
+    }
+  });
+}
+
+// ---------------------------------------------------------------- BUDGET
+function computeBudgetTotals(){
+  const t = currentTrip;
+  const flights = t.flights.reduce((s,f)=>s+(Number(f.price)||0),0);
+  const hotels = t.hotels.reduce((s,h)=>s+(Number(h.price)||0),0);
+  const transport = t.transport.reduce((s,tr)=>s+(Number(tr.price)||0),0);
+  const byExpenseCat = {};
+  Object.keys(EXPENSE_CATS).forEach(k=>byExpenseCat[k]=0);
+  t.expenses.forEach(e=>{ byExpenseCat[e.category] = (byExpenseCat[e.category]||0) + (Number(e.amount)||0); });
+  const expensesTotal = Object.values(byExpenseCat).reduce((a,b)=>a+b,0);
+  const categories = [
+    { key:'vols', label:'✈ Vols', amount: flights, color:'var(--vermilion)' },
+    { key:'hotels', label:'🏨 Hôtels', amount: hotels, color:'var(--kraft)' },
+    { key:'transport', label:'🚉 Transport sur place', amount: transport, color:'var(--transit)' },
+    ...Object.entries(EXPENSE_CATS).map(([k,label])=>({ key:k, label, amount: byExpenseCat[k], color: EXPENSE_CAT_COLORS[k] }))
+  ];
+  const grandTotal = flights + hotels + transport + expensesTotal;
+  return { flights, hotels, transport, expensesTotal, categories, grandTotal };
+}
+function renderBudget(c){
+  const t = currentTrip;
+  const cur = t.meta.currency || 'EUR';
+  const { categories, grandTotal } = computeBudgetTotals();
+  const target = t.meta.budgetTarget;
+  const maxCat = Math.max(1, ...categories.map(x=>x.amount));
+  const remaining = target!=null ? target - grandTotal : null;
+  const nights = t.hotels.reduce((s,h)=> s + ((h.checkin&&h.checkout)?Math.max(0,daysBetween(h.checkin,h.checkout)):0), 0);
+  const tripDays = t.days.length || null;
+
+  const sortedExpenses = [...t.expenses].sort((a,b)=> (b.date||'').localeCompare(a.date||''));
+
+  c.innerHTML = `
+    <div class="vy-stats">
+      <div class="vy-stat"><div class="n">${fmtMoney(grandTotal, cur)}</div><div class="l">Total dépensé</div></div>
+      ${target!=null ? `
+      <div class="vy-stat"><div class="n">${fmtMoney(target, cur)}</div><div class="l">Budget prévisionnel</div></div>
+      <div class="vy-stat" style="${remaining<0?'border-color:var(--danger);':''}"><div class="n" style="${remaining<0?'color:var(--danger);':''}">${remaining<0?'−':''}${fmtMoney(Math.abs(remaining), cur)}</div><div class="l">${remaining<0?'Dépassement':'Restant'}</div></div>
+      ` : `<div class="vy-stat" id="vySetBudgetTarget" style="cursor:pointer;"><div class="n" style="font-size:16px;color:var(--ink-soft);">+ Définir</div><div class="l">Budget prévisionnel</div></div>`}
+      ${tripDays ? `<div class="vy-stat"><div class="n">${fmtMoney(grandTotal/tripDays, cur)}</div><div class="l">Par jour de voyage</div></div>` : ''}
+    </div>
+
+    <div class="vy-section-head"><h3>Répartition par catégorie</h3></div>
+    <div class="vy-budget-bars">
+      ${categories.filter(cat=>cat.amount>0 || true).map(cat=>`
+        <div class="vy-budget-row">
+          <div class="vy-budget-row-label">${cat.label}</div>
+          <div class="vy-budget-row-bar"><div style="width:${grandTotal>0?Math.max(2,Math.round(cat.amount/maxCat*100)):0}%;background:${cat.color}"></div></div>
+          <div class="vy-budget-row-amount">${fmtMoney(cat.amount, cur)}</div>
+        </div>
+      `).join('')}
+    </div>
+
+    <div class="vy-section-head" style="margin-top:24px;"><h3>Dépenses annexes</h3><button class="vy-btn small" id="vyAddExpense">+ Ajouter une dépense</button></div>
+    <p style="color:var(--ink-soft);font-size:12px;margin:-8px 0 14px;">Activités, restaurants, shopping… Les vols, hôtels et trajets se renseignent directement dans leurs onglets respectifs.</p>
+    ${sortedExpenses.length ? '<div class="vy-expense-list">'+sortedExpenses.map(expenseRow).join('')+'</div>' : '<div class="vy-empty-hint">Aucune dépense annexe enregistrée.</div>'}
+  `;
+
+  const setBtn = document.getElementById('vySetBudgetTarget');
+  if(setBtn) setBtn.addEventListener('click', openEditTripDialog);
+  document.getElementById('vyAddExpense').addEventListener('click', ()=>openExpenseDialog(null));
+  c.querySelectorAll('[data-edit-expense]').forEach(b=>b.addEventListener('click', ()=>openExpenseDialog(b.getAttribute('data-edit-expense'))));
+  c.querySelectorAll('[data-del-expense]').forEach(b=>b.addEventListener('click', ()=>deleteItem('expenses', b.getAttribute('data-del-expense'))));
+}
+function expenseRow(e){
+  return `<div class="vy-expense-row">
+    <span class="vy-expense-cat-dot" style="background:${EXPENSE_CAT_COLORS[e.category]||EXPENSE_CAT_COLORS.divers}"></span>
+    <div class="vy-expense-main">
+      <div class="vy-expense-label">${esc(e.label||'Dépense')}</div>
+      <div class="vy-expense-sub">${(EXPENSE_CATS[e.category]||EXPENSE_CATS.divers)}${e.date?' · '+fmtDate(e.date):''}${e.notes?' · '+esc(e.notes):''}</div>
+    </div>
+    <div class="vy-expense-amount">${fmtMoney(e.amount)}</div>
+    <div class="vy-expense-actions">
+      <button class="vy-iconbtn" data-edit-expense="${e.id}">✎</button>
+      <button class="vy-iconbtn" data-del-expense="${e.id}">✕</button>
+    </div>
+  </div>`;
+}
+function openExpenseDialog(id){
+  const existing = id ? currentTrip.expenses.find(x=>x.id===id) : { label:'', category:'divers', amount:'', date:todayIso(), notes:'' };
+  openDialog(id?'Modifier la dépense':'Ajouter une dépense 💰', `
+    <div class="vy-dialog-section">
+      <div class="vy-dialog-section-title">Détail</div>
+      <div class="vy-field">
+        <label>Libellé</label>
+        <div class="vy-input-icon-wrap"><span class="ico">📝</span><input name="label" value="${esc(existing.label)}" required placeholder="Dîner izakaya, ticket TeamLab…"></div>
+      </div>
+      <div class="vy-row">
+        <div class="vy-field" style="margin-bottom:0">
+          <label>Catégorie</label>
+          <select name="category">${Object.entries(EXPENSE_CATS).map(([k,v])=>`<option value="${k}" ${existing.category===k?'selected':''}>${v}</option>`).join('')}</select>
+        </div>
+        <div class="vy-field" style="margin-bottom:0">
+          <label>Montant</label>
+          <div class="vy-input-icon-wrap"><span class="ico">💰</span><input type="number" step="0.01" min="0" name="amount" value="${existing.amount??''}" required placeholder="0.00"></div>
+        </div>
+      </div>
+    </div>
+    <div class="vy-dialog-section">
+      <div class="vy-field" style="margin-bottom:0"><label>Date</label><input type="date" name="date" value="${esc(existing.date)}"></div>
+    </div>
+    <div class="vy-dialog-section">
+      <div class="vy-dialog-section-title">Notes</div>
+      <div class="vy-field" style="margin-bottom:0"><textarea name="notes" rows="2" placeholder="Détails, lieu…">${esc(existing.notes)}</textarea></div>
+    </div>
+  `, async (fd)=>{
+    const patch = { label: fd.get('label'), category: fd.get('category'), amount: parseFloat(fd.get('amount'))||0, date: fd.get('date'), notes: fd.get('notes') };
+    if(id) await updateItem('expenses', id, patch); else await addItem('expenses', patch);
+    dialog.close();
+  });
+}
+
+// ---------------------------------------------------------------- CHECKLIST
+function renderChecklist(c){
+  const t = currentTrip;
+  function col(cat, title){
+    const items = t.checklist.filter(x=>x.category===cat);
+    const done = items.filter(x=>x.done).length;
+    const pct = items.length ? Math.round(done/items.length*100) : 0;
+    return `<div class="vy-checklist-col">
+      <h4>${title}</h4>
+      <div class="vy-progress"><div style="width:${pct}%"></div></div>
+      ${items.map(it=>`<div class="vy-check-item ${it.done?'done':''}">
+        <input type="checkbox" data-check="${it.id}" ${it.done?'checked':''}>
+        <span class="txt">${esc(it.text)}</span>
+        <button class="vy-iconbtn" data-del-check="${it.id}">✕</button>
+      </div>`).join('')}
+      <form class="vy-checkform" data-add-check="${cat}">
+        <input name="text" placeholder="Ajouter un élément…" required>
+        <button class="vy-btn small" type="submit">+</button>
+      </form>
+    </div>`;
+  }
+  c.innerHTML = `<div class="vy-section-head"><h3>Check-list</h3></div>
+  <div class="vy-checklist-cols">${col('before','Avant le départ (démarches)')}${col('packing','Bagages')}</div>`;
+  c.querySelectorAll('[data-check]').forEach(cb=>cb.addEventListener('change', ()=>updateItem('checklist', cb.getAttribute('data-check'), {done: cb.checked})));
+  c.querySelectorAll('[data-del-check]').forEach(b=>b.addEventListener('click', ()=>deleteItem('checklist', b.getAttribute('data-del-check'))));
+  c.querySelectorAll('[data-add-check]').forEach(f=>f.addEventListener('submit', (e)=>{
+    e.preventDefault();
+    const fd = new FormData(f);
+    const text = fd.get('text');
+    if(!text) return;
+    addItem('checklist', { category: f.getAttribute('data-add-check'), text, done:false });
+  }));
+}
+
+// ---------------------------------------------------------------- LEAFLET MAP
+function ensureLeaflet(){
+  if(window.L){ leafletReady = true; return Promise.resolve(); }
+  return new Promise((resolve)=>{
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css';
+    document.head.appendChild(link);
+    const script = document.createElement('script');
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js';
+    script.onload = ()=>{ leafletReady = true; resolve(); };
+    script.onerror = ()=> resolve();
+    document.head.appendChild(script);
+  });
+}
+
+// ---------------------------------------------------------------- PDF.js (billet import)
+function ensurePdfJs(){
+  if(window.pdfjsLib){ return Promise.resolve(true); }
+  return new Promise((resolve)=>{
+    const script = document.createElement('script');
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js';
+    script.onload = ()=>{
+      try{ window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js'; }catch(e){}
+      resolve(true);
+    };
+    script.onerror = ()=> resolve(false);
+    document.head.appendChild(script);
+  });
+}
+async function extractPdfText(file){
+  const ok = await ensurePdfJs();
+  if(!ok || !window.pdfjsLib) throw new Error('pdfjs-unavailable');
+  const buf = await file.arrayBuffer();
+  const doc = await window.pdfjsLib.getDocument({ data: buf }).promise;
+  let text = '';
+  for(let i=1; i<=doc.numPages; i++){
+    const page = await doc.getPage(i);
+    const content = await page.getTextContent();
+    text += content.items.map(it=>it.str).join(' ') + '\n';
+  }
+  return text;
+}
+function drawMap(){
+  const mapDiv = document.getElementById('vy-leaflet-map');
+  if(!mapDiv) return;
+  if(!window.L){ mapDiv.innerHTML = '<div class="vy-loading">Carte indisponible (chargement impossible).</div>'; return; }
+  // Each tab re-render replaces the map container with a fresh DOM node.
+  // If the previous Leaflet instance is bound to a now-detached node, tear it down first.
+  if(mapObj && mapObj.getContainer && mapObj.getContainer() !== mapDiv){
+    try{ mapObj.remove(); }catch(e){}
+    mapObj = null; markersLayer = null; routeLayer = null;
+  }
+  const isNewMapInstance = !mapObj;
+  if(!mapObj){
+    mapObj = L.map(mapDiv, { attributionControl: true }).setView([35.68, 139.76], 6);
+    // CARTO's basemap tiles work reliably in sandboxed/embedded contexts (no strict referer requirement),
+    // unlike the raw OpenStreetMap tile servers which return 403 without a proper referer header.
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+      maxZoom: 19,
+      subdomains: 'abcd',
+      attribution: '&copy; OpenStreetMap contributors &copy; CARTO'
+    }).addTo(mapObj);
+    markersLayer = L.layerGroup().addTo(mapObj);
+    routeLayer = L.layerGroup().addTo(mapObj);
+  } else {
+    mapObj.invalidateSize();
+  }
+  markersLayer.clearLayers();
+  routeLayer.clearLayers();
+  placeMarkers = {};
+  const t = currentTrip;
+  const bounds = [];
+  const dotIcon = (color)=> L.divIcon({ className:'', html:`<div style="width:14px;height:14px;border-radius:50%;background:${color};border:2px solid #fff;box-shadow:0 0 0 1px ${color};"></div>`, iconSize:[14,14] });
+
+  t.places.forEach(p=>{
+    if(hiddenCats.has(p.category||'autre')) return;
+    if(p.lat && p.lng){
+      const color = CAT_COLORS[p.category] || CAT_COLORS.autre;
+      const marker = L.marker([p.lat,p.lng], {icon: dotIcon(color)}).addTo(markersLayer).bindPopup(`<b>${(CATS[p.category]||CATS.autre).split(' ')[0]} ${esc(p.name)}</b><br>${esc(p.notes||'')}`);
+      placeMarkers[p.id] = marker;
+      bounds.push([p.lat,p.lng]);
+    }
+  });
+  t.hotels.forEach(h=>{ if(h.lat && h.lng){ L.marker([h.lat,h.lng], {icon: dotIcon(HOTEL_COLOR)}).addTo(markersLayer).bindPopup(`<b>🏨 ${esc(h.name)}</b><br>${esc(h.address||'')}`); bounds.push([h.lat,h.lng]); } });
+  t.transport.forEach(tr=>{
+    if(tr.fromLat && tr.fromLng){ L.marker([tr.fromLat,tr.fromLng], {icon: dotIcon(TRANSIT_COLOR)}).addTo(markersLayer).bindPopup(`<b>${esc(tr.fromName)}</b>`); bounds.push([tr.fromLat,tr.fromLng]); }
+    if(tr.toLat && tr.toLng){ L.marker([tr.toLat,tr.toLng], {icon: dotIcon(TRANSIT_COLOR)}).addTo(markersLayer).bindPopup(`<b>${esc(tr.toName)}</b>`); bounds.push([tr.toLat,tr.toLng]); }
+  });
+
+  // overlay of the day-by-day itinerary paths (dashed, transport legs only —
+  // "lieux à visiter" are shown as markers but are not connected by a line)
+  t.days.forEach(d=>{
+    d.steps.forEach(s=>{
+      if(s.type==='transport'){
+        const tr = t.transport.find(x=>x.id===s.ref);
+        if(tr && tr.fromLat && tr.fromLng && tr.toLat && tr.toLng){
+          L.polyline([[tr.fromLat,tr.fromLng],[tr.toLat,tr.toLng]], {color:'#C1401F', weight:3, dashArray:'6 4', opacity:.8}).addTo(routeLayer);
+        }
+      }
+    });
+  });
+
+
+  const tripCountry = t.meta && t.meta.country;
+  if(bounds.length){
+    mapObj.fitBounds(bounds, {padding:[30,30]});
+    mapCenteredForTripId = currentTripId;
+  } else if((isNewMapInstance || mapCenteredForTripId !== currentTripId) && tripCountry){
+    // No places/hotels/transport plotted yet: recenter the map on the trip's country
+    // instead of leaving it on the previous default (or the previous trip's) location.
+    const tripIdAtRequest = currentTripId;
+    mapCenteredForTripId = tripIdAtRequest;
+    geocode(tripCountry).then(g=>{
+      if(g && mapObj && currentTripId === tripIdAtRequest){
+        mapObj.setView([g.lat, g.lng], 6);
+      }
+    });
+  }
+}
+
+// ---------------------------------------------------------------- new/edit trip dialogs
+function openNewTripDialog(){
+  openDialog('Nouveau voyage ✈', `
+    <div class="vy-dialog-section">
+      <div class="vy-dialog-section-title">Destination</div>
+      <div class="vy-field"><label>Nom du voyage</label><input name="name" required placeholder="Japon 2026"></div>
+      <div class="vy-field" style="margin-bottom:0"><label>Pays / destination</label><input name="country" required placeholder="Japon"></div>
+    </div>
+    <div class="vy-dialog-section">
+      <div class="vy-dialog-section-title">Dates</div>
+      <div class="vy-date-pair">
+        <div class="vy-field"><label>Départ</label><input type="date" name="startDate" required></div>
+        <div class="vy-field"><label>Retour</label><input type="date" name="endDate" required></div>
+      </div>
+    </div>
+  `, async (fd)=>{
+    const meta = { name: fd.get('name'), country: fd.get('country'), startDate: fd.get('startDate'), endDate: fd.get('endDate') };
+    await createTrip(meta);
+    dialog.close();
+  }, 'Créer le voyage');
+}
+function openEditTripDialog(){
+  const m = currentTrip.meta;
+  openDialog('Modifier le voyage ✈', `
+    <div class="vy-dialog-section">
+      <div class="vy-dialog-section-title">Destination</div>
+      <div class="vy-field"><label>Nom du voyage</label><input name="name" required value="${esc(m.name)}"></div>
+      <div class="vy-field" style="margin-bottom:0"><label>Pays / destination</label><input name="country" required value="${esc(m.country)}"></div>
+    </div>
+    <div class="vy-dialog-section">
+      <div class="vy-dialog-section-title">Dates</div>
+      <div class="vy-date-pair">
+        <div class="vy-field"><label>Départ</label><input type="date" name="startDate" required value="${esc(m.startDate)}"></div>
+        <div class="vy-field"><label>Retour</label><input type="date" name="endDate" required value="${esc(m.endDate)}"></div>
+      </div>
+    </div>
+    <div class="vy-dialog-section">
+      <div class="vy-dialog-section-title">Budget</div>
+      <div class="vy-row">
+        <div class="vy-field" style="margin-bottom:0">
+          <label>Devise</label>
+          <select name="currency">${Object.entries(CURRENCIES).map(([k,v])=>`<option value="${k}" ${(m.currency||'EUR')===k?'selected':''}>${v}</option>`).join('')}</select>
+        </div>
+        <div class="vy-field" style="margin-bottom:0">
+          <label>Budget prévisionnel <span style="font-weight:400;text-transform:none;letter-spacing:0">(optionnel)</span></label>
+          <div class="vy-input-icon-wrap"><span class="ico">💰</span><input type="number" step="0.01" min="0" name="budgetTarget" value="${m.budgetTarget??''}" placeholder="0.00"></div>
+        </div>
+      </div>
+    </div>
+  `, async (fd)=>{
+    const budgetTarget = fd.get('budgetTarget') ? parseFloat(fd.get('budgetTarget')) : null;
+    const patch = { name: fd.get('name'), country: fd.get('country'), startDate: fd.get('startDate'), endDate: fd.get('endDate'), currency: fd.get('currency'), budgetTarget };
+    await updateTripMeta(patch);
+    dialog.close();
+  });
+}
+
+checkForRememberedFile();
+
+})();
+</script>
+</body>
+</html>
