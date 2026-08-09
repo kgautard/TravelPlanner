@@ -268,6 +268,8 @@
 .vy-progress > div { height: 100%; background: var(--vermilion); }
 
 .vy-budget-bars { display: flex; flex-direction: column; gap: 10px; margin-bottom: 4px; }
+.vy-legend-line { width: 16px; height: 3px; border-radius: 2px; flex-shrink: 0; }
+.vy-transport-legend-title { font-size: 0.75rem; color: #999; margin: 10px 0 6px; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }
 .vy-budget-row { display: grid; grid-template-columns: 170px 1fr 90px; align-items: center; gap: 12px; }
 .vy-budget-row-label { font-size: 12.5px; color: var(--ink-soft); }
 .vy-budget-row-bar { height: 10px; background: var(--paper-dim); border-radius: 5px; overflow: hidden; }
@@ -419,15 +421,19 @@
 .vy-save-menu-btn:hover { background: rgba(0,0,0,.06); color: var(--ink); }
 .vy-save-dropdown {
   position: absolute; top: 100%; right: 0; margin-top: 6px; background: var(--paper-card);
-  border: 1px solid var(--line); border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,.12);
-  z-index: 1000; display: none; min-width: 210px; overflow: hidden;
+  border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 4px 16px rgba(0,0,0,.14);
+  z-index: 1000; display: none; min-width: 280px; max-width: 320px; overflow: hidden; padding: 6px 0;
 }
 .vy-save-dropdown.show { display: block; }
-.vy-save-dropdown button {
-  width: 100%; text-align: left; background: transparent; border: none; padding: 10px 14px;
-  font-size: 12.5px; color: var(--ink); display: flex; align-items: center; gap: 8px;
-}
-.vy-save-dropdown button:hover { background: var(--paper-dim); }
+.vy-menu-label { font-family: var(--font-mono); font-size: 10px; text-transform: uppercase; letter-spacing: .07em; color: var(--ink-faint); padding: 9px 14px 4px; }
+.vy-menu-item { width: 100%; text-align: left; background: transparent; border: none; padding: 8px 14px; display: flex; align-items: flex-start; gap: 10px; }
+.vy-menu-item:hover { background: var(--paper-dim); }
+.vy-menu-icon { font-size: 15px; flex-shrink: 0; width: 22px; text-align: center; line-height: 1.5; }
+.vy-menu-text { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.vy-menu-title { font-size: 12.5px; font-weight: 600; color: var(--ink); }
+.vy-menu-desc { font-size: 10.5px; color: var(--ink-soft); line-height: 1.35; }
+.vy-menu-item-danger .vy-menu-title { color: var(--danger); }
+.vy-menu-sep { height: 1px; background: var(--line); margin: 5px 0; }
 
 /* ---------- Mobile hamburger + drawer (desktop untouched above) ---------- */
 .vy-hamburger-btn { display: none; }
@@ -570,10 +576,30 @@
           <span id="vyStatusText">—</span>
           <button class="vy-save-menu-btn" id="vySaveMenuBtn" title="Menu sauvegarde">💾</button>
           <div class="vy-save-dropdown" id="vySaveDropdown">
-            <button type="button" id="menuImportBtn">📥 Importer une sauvegarde</button>
-            <button type="button" id="menuExportBtn">📤 Exporter</button>
-            <button type="button" id="menuPdfBtn">🖨 Exporter en PDF</button>
-            <button type="button" id="menuNewBtn" style="color:var(--danger);">🗑 Projet vide</button>
+            <div class="vy-menu-label">Sauvegarde (.json)</div>
+            <button type="button" id="menuExportBtn" class="vy-menu-item">
+              <span class="vy-menu-icon">💾</span>
+              <span class="vy-menu-text"><span class="vy-menu-title">Télécharger la sauvegarde</span><span class="vy-menu-desc">Fichier .json complet, à conserver ou réimporter plus tard</span></span>
+            </button>
+            <button type="button" id="menuImportBtn" class="vy-menu-item">
+              <span class="vy-menu-icon">📥</span>
+              <span class="vy-menu-text"><span class="vy-menu-title">Importer une sauvegarde</span><span class="vy-menu-desc">Recharger un fichier .json exporté précédemment</span></span>
+            </button>
+            <div class="vy-menu-sep"></div>
+            <div class="vy-menu-label">Exporter le voyage</div>
+            <button type="button" id="menuPdfBtn" class="vy-menu-item">
+              <span class="vy-menu-icon">🖨</span>
+              <span class="vy-menu-text"><span class="vy-menu-title">En PDF</span><span class="vy-menu-desc">Document imprimable : vols, hôtels, transports</span></span>
+            </button>
+            <button type="button" id="menuIcsBtn" class="vy-menu-item">
+              <span class="vy-menu-icon">📅</span>
+              <span class="vy-menu-text"><span class="vy-menu-title">Vers l'agenda</span><span class="vy-menu-desc">Fichier .ics à importer dans Google Agenda, Apple Calendar, Outlook…</span></span>
+            </button>
+            <div class="vy-menu-sep"></div>
+            <button type="button" id="menuNewBtn" class="vy-menu-item vy-menu-item-danger">
+              <span class="vy-menu-icon">🗑</span>
+              <span class="vy-menu-text"><span class="vy-menu-title">Nouveau projet vide</span><span class="vy-menu-desc">Efface le voyage affiché — pensez à l'exporter avant</span></span>
+            </button>
           </div>
         </div>
       </div>
@@ -610,6 +636,9 @@ let activeTab = 'apercu';
 let leafletReady = false;
 let mapObj = null, markersLayer = null, routeLayer = null;
 let placeMarkers = {};
+let transportMarkers = {};
+let hideHotels = false;
+let hideTransport = false;
 let mapCenteredForTripId = null;
 
 const CATS = { temple:'⛩ Temple/Sanctuaire', nature:'🌿 Nature', randonnee:'🥾 Randonnée', ville:'🏙 Ville/Quartier', food:'🍜 Restaurant', shopping:'🛍 Shopping', musee:'🖼 Musée', autre:'📍 Autre' };
@@ -619,10 +648,11 @@ function gmapsUrl(lat, lng, name){
   // search/?api=1&query=... just shows the pin/location (no itinerary requested),
   // and works universally: opens the native Google Maps app on mobile, falls back
   // to Google Maps on the web otherwise — no separate app-detection needed.
-  const q = (lat!=null && lng!=null) ? `${lat},${lng}` : encodeURIComponent(name||'');
+  const q = (name && name.trim()) ? encodeURIComponent(name) : (lat!=null && lng!=null) ? `${lat},${lng}` : '';
   return `https://www.google.com/maps/search/?api=1&query=${q}`;
 }
 const TRANSIT_COLOR = '#3E6E6C';
+const TRANSPORT_LINE_COLORS = { train:'#3E6E6C', metro:'#7C3AED', bus:'#EA580C', ferry:'#0EA5E9', voiture:'#DC2626', velo:'#16A34A', pied:'#78716C', avion:'#2563EB' };
 const TRANSPORT_MODES = { train:'🚄 Train', metro:'🚇 Métro/Subway', bus:'🚌 Bus', ferry:'⛴ Ferry', voiture:'🚗 Voiture', velo:'🚴 Vélo', pied:'🚶 À pied', avion:'✈ Vol interne' };
 // Vitesse moyenne (km/h) et temps fixe additionnel (min : embarquement, correspondances…) par mode, utilisés pour estimer automatiquement la durée d'un trajet.
 const TRANSPORT_SPEEDS   = { train:70, metro:32, bus:22, ferry:25, voiture:55, velo:15, pied:4.8, avion:550 };
@@ -669,6 +699,7 @@ saveMenuBtn.addEventListener('click', (e)=>{ e.stopPropagation(); saveDropdown.c
 document.addEventListener('click', ()=> saveDropdown.classList.remove('show'));
 document.getElementById('menuExportBtn').addEventListener('click', ()=>downloadCopy(buildBackupBaseName()+'.json'));
 document.getElementById('menuPdfBtn').addEventListener('click', exportTripPDF);
+document.getElementById('menuIcsBtn').addEventListener('click', exportTripICS);
 document.getElementById('menuImportBtn').addEventListener('click', ()=>{ fileInput.dataset.mode='import'; fileInput.click(); });
 document.getElementById('menuNewBtn').addEventListener('click', ()=>{
   if(confirm('Créer un projet vide ? Pensez à exporter la session actuelle avant si besoin.')) createNewFile();
@@ -692,7 +723,7 @@ function daysBetween(a,b){ const da=new Date(a+'T00:00:00'), db=new Date(b+'T00:
 function addDays(iso,n){ const d=new Date(iso+'T00:00:00'); d.setDate(d.getDate()+n); return d.toISOString().slice(0,10); }
 function todayIso(){ return new Date().toISOString().slice(0,10); }
 function fmtMoney(n, currency){
-  const cur = currency || (currentTrip && currentTrip.meta.currency) || 'EUR';
+  const cur = 'EUR';
   if(n==null || isNaN(n)) return '—';
   try{ return Number(n).toLocaleString('fr-FR', { style:'currency', currency:cur, maximumFractionDigits: (cur==='JPY'?0:2) }); }
   catch(e){ return Number(n).toFixed(2) + ' ' + cur; }
@@ -1109,6 +1140,143 @@ function exportTripPDF(){
   w.document.close();
   w.focus();
   setTimeout(()=>{ w.print(); }, 350);
+}
+
+// ---------------------------------------------------------------- ICS export (agenda)
+function icsEscape(s){
+  return String(s==null?'':s).replace(/\\/g,'\\\\').replace(/;/g,'\\;').replace(/,/g,'\\,').replace(/\n/g,'\\n');
+}
+function icsFold(line){
+  // RFC5545: lines should not exceed 75 octets; continuation lines start with a space.
+  const enc = new TextEncoder();
+  if(enc.encode(line).length <= 74) return line;
+  let out = '', bytes = 0;
+  for(const ch of line){
+    const chBytes = enc.encode(ch).length;
+    if(bytes + chBytes > 74){ out += '\r\n '; bytes = 0; }
+    out += ch; bytes += chBytes;
+  }
+  return out;
+}
+function icsDateStamp(){ return new Date().toISOString().replace(/[-:]/g,'').split('.')[0]+'Z'; }
+function icsDate(dateStr){ return (dateStr||'').replace(/-/g,''); }
+function icsDateTime(dtStr){
+  if(!dtStr) return '';
+  const [d,t] = dtStr.split('T');
+  return icsDate(d) + 'T' + (t||'00:00').replace(':','') + '00';
+}
+function buildICS(t){
+  const lines = [];
+  const push = (s)=> lines.push(icsFold(s));
+  const dtstamp = icsDateStamp();
+  push('BEGIN:VCALENDAR');
+  push('VERSION:2.0');
+  push('PRODID:-//Voyages App//FR');
+  push('CALSCALE:GREGORIAN');
+
+  function addEvent({uid, allDay, start, end, summary, location, description}){
+    if(!start || !summary) return;
+    push('BEGIN:VEVENT');
+    push('UID:'+uid);
+    push('DTSTAMP:'+dtstamp);
+    if(allDay){
+      push('DTSTART;VALUE=DATE:'+start);
+      push('DTEND;VALUE=DATE:'+(end||start));
+    } else {
+      push('DTSTART:'+start);
+      push('DTEND:'+(end||start));
+    }
+    push('SUMMARY:'+icsEscape(summary));
+    if(location) push('LOCATION:'+icsEscape(location));
+    if(description) push('DESCRIPTION:'+icsEscape(description));
+    push('END:VEVENT');
+  }
+
+  // Journées planifiées (une entrée par jour, journée entière)
+  t.days.forEach(day=>{
+    if(!day.steps.length && !(day.notes||'').trim()) return;
+    const stepLines = day.steps.map(s=>{
+      if(s.type==='place'){ const p=t.places.find(x=>x.id===s.ref); return p ? '• '+p.name : null; }
+      if(s.type==='transport'){ const tr=t.transport.find(x=>x.id===s.ref); return tr ? '• '+(tr.fromName+' → '+tr.toName) : null; }
+      return s.text ? '• '+s.text : null;
+    }).filter(Boolean);
+    let desc = stepLines.join('\n');
+    if((day.notes||'').trim()) desc += (desc?'\n\n':'')+day.notes.trim();
+    addEvent({
+      uid: day.id+'-day@voyages-app',
+      allDay: true,
+      start: icsDate(day.date),
+      end: icsDate(addDays(day.date,1)),
+      summary: (t.meta.name?t.meta.name+' — ':'')+(day.label||'Journée'),
+      description: desc
+    });
+  });
+
+  // Vols
+  t.flights.forEach(f=>{
+    if(!f.depDatetime) return;
+    addEvent({
+      uid: f.id+'-flight@voyages-app',
+      allDay: false,
+      start: icsDateTime(f.depDatetime),
+      end: icsDateTime(f.arrDatetime || f.depDatetime),
+      summary: '✈ Vol '+(f.depCity||f.depAirport||'?')+' → '+(f.arrCity||f.arrAirport||'?'),
+      location: f.depAirport||'',
+      description: [f.airline, f.flightNumber, f.confirmation&&('Réf. '+f.confirmation), f.notes].filter(Boolean).join('\n')
+    });
+  });
+
+  // Hôtels (du check-in au check-out)
+  t.hotels.forEach(h=>{
+    if(!h.checkin) return;
+    addEvent({
+      uid: h.id+'-hotel@voyages-app',
+      allDay: true,
+      start: icsDate(h.checkin),
+      end: icsDate(h.checkout || addDays(h.checkin,1)),
+      summary: '🏨 '+(h.name||'Hôtel'),
+      location: h.address||'',
+      description: [h.confirmation&&('Réf. '+h.confirmation), h.notes].filter(Boolean).join('\n')
+    });
+  });
+
+  // Transports
+  t.transport.forEach(tr=>{
+    if(!tr.date) return;
+    const modeLabel = (TRANSPORT_MODES[tr.mode]||'🚉 Trajet').replace(/^\S+\s/,'');
+    const summary = modeLabel+' : '+(tr.fromName||'?')+' → '+(tr.toName||'?');
+    const description = [tr.line&&('Ligne '+tr.line), tr.notes].filter(Boolean).join('\n');
+    if(tr.time){
+      addEvent({
+        uid: tr.id+'-transport@voyages-app',
+        allDay: false,
+        start: icsDateTime(tr.date+'T'+tr.time),
+        end: icsDateTime(tr.date+'T'+(tr.arrivalTime||tr.time)),
+        summary, description
+      });
+    } else {
+      addEvent({
+        uid: tr.id+'-transport@voyages-app',
+        allDay: true,
+        start: icsDate(tr.date),
+        end: icsDate(addDays(tr.date,1)),
+        summary, description
+      });
+    }
+  });
+
+  push('END:VCALENDAR');
+  return lines.join('\r\n');
+}
+function exportTripICS(){
+  if(!currentTrip){ alert('Aucun voyage sélectionné.'); return; }
+  const ics = buildICS(currentTrip);
+  const blob = new Blob([ics], {type:'text/calendar;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = buildBackupBaseName()+'.ics';
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url), 1000);
 }
 
 
@@ -1773,18 +1941,30 @@ function renderLieux(c){
   const t = currentTrip;
   const usedCats = Array.from(new Set(t.places.map(p=>p.category||'autre')));
   const visiblePlaces = t.places.filter(p=>!hiddenCats.has(p.category||'autre'));
+  const hasTransportPoints = t.transport.some(tr=>(tr.fromLat && tr.fromLng) || (tr.toLat && tr.toLng));
+  const usedTransportLineModes = Array.from(new Set(t.transport.filter(tr=>tr.fromLat && tr.fromLng && tr.toLat && tr.toLng).map(tr=>tr.mode)));
   c.innerHTML = `
     <div class="vy-section-head"><h3>Lieux & carte</h3><button class="vy-btn small" id="vyAddPlace">+ Ajouter un lieu</button></div>
     <div class="vy-map-layout">
       <div class="vy-map-side">
-        ${usedCats.length ? `<div class="vy-map-legend">${usedCats.map(cat=>{
+        ${usedCats.length || t.hotels.length || hasTransportPoints ? `<div style="font-size:0.75rem; color:#999; margin-bottom:6px; text-transform:uppercase; letter-spacing:0.5px; font-weight:600;">Filtres</div><div class="vy-map-legend">${usedCats.map(cat=>{
           const color = CAT_COLORS[cat]||CAT_COLORS.autre;
           const active = !hiddenCats.has(cat);
           return `<button type="button" class="vy-legend-pill ${active?'active':''}" data-cat-filter="${cat}" style="--pill-color:${color}">
             <span class="vy-legend-dot" style="background:${color}"></span>${esc((CATS[cat]||CATS.autre).split(' ').slice(1).join(' '))}
           </button>`;
+        }).join('')}${t.hotels.length ? `<button type="button" class="vy-legend-pill ${!hideHotels?'active':''}" data-filter-type="hotel" style="--pill-color:#B99A6B">
+            <span class="vy-legend-dot" style="background:#B99A6B"></span>Hôtels
+          </button>` : ''}${hasTransportPoints ? `<button type="button" class="vy-legend-pill ${!hideTransport?'active':''}" data-filter-type="transport" style="--pill-color:${TRANSIT_COLOR}">
+            <span class="vy-legend-dot" style="background:${TRANSIT_COLOR}"></span>Transport
+          </button>` : ''}${(hiddenCats.size<usedCats.length || (t.hotels.length && !hideHotels) || (hasTransportPoints && !hideTransport)) ? `<button type="button" class="vy-legend-pill" data-filter-type="hide-all" title="Tout masquer" style="--pill-color:#999; padding:0 10px;">✕</button>` : ''}</div>` : ''}
+        ${(usedTransportLineModes.length && !hideTransport) ? `<div class="vy-transport-legend-title">Légende trajets</div><div class="vy-map-legend">${usedTransportLineModes.map(mode=>{
+          const color = TRANSPORT_LINE_COLORS[mode] || TRANSIT_COLOR;
+          return `<span class="vy-legend-pill active" style="--pill-color:${color}; cursor:default;">
+            <span class="vy-legend-line" style="background:${color}"></span>${esc(TRANSPORT_MODES[mode]||mode)}
+          </span>`;
         }).join('')}</div>` : ''}
-        ${(visiblePlaces.length || t.hotels.length) ? visiblePlaces.map(p=>`
+        ${(visiblePlaces.length || (!hideHotels && t.hotels.length)) ? visiblePlaces.map(p=>`
           <div class="vy-place-row ${selectedPlaceId===p.id?'selected':''}" data-place-row="${p.id}">
             <span class="vy-place-cat" style="background:${(CAT_COLORS[p.category]||CAT_COLORS.autre)}22; color:${CAT_COLORS[p.category]||CAT_COLORS.autre};">${(CATS[p.category]||CATS.autre).split(' ')[0]}</span>
             <div style="flex:1;min-width:0;">
@@ -1793,7 +1973,7 @@ function renderLieux(c){
               ${(p.lat&&p.lng)?'<div class="vy-place-coords">'+p.lat.toFixed(4)+', '+p.lng.toFixed(4)+'</div>':'<div class="vy-place-coords">Pas de coordonnées</div>'}
             </div>
             <div class="vy-step-actions"><a class="vy-iconbtn" href="${gmapsUrl(p.lat,p.lng,p.name)}" target="_blank" rel="noopener" title="Ouvrir dans Google Maps" onclick="event.stopPropagation()">🧭</a><button class="vy-iconbtn" data-edit-place="${p.id}">✎</button><button class="vy-iconbtn" data-del-place="${p.id}">✕</button></div>
-          </div>`).join('') + t.hotels.map(h=>`
+          </div>`).join('') + (!hideHotels ? t.hotels.map(h=>`
           <div class="vy-place-row ${selectedPlaceId===h.id?'selected':''}" data-hotel-row="${h.id}">
             <span class="vy-place-cat" style="background:${HOTEL_COLOR}22; color:${HOTEL_COLOR};">🏨</span>
             <div style="flex:1;min-width:0;">
@@ -1802,7 +1982,7 @@ function renderLieux(c){
               ${(h.lat&&h.lng)?'<div class="vy-place-coords">'+h.lat.toFixed(4)+', '+h.lng.toFixed(4)+'</div>':'<div class="vy-place-coords">Pas de coordonnées</div>'}
             </div>
             <div class="vy-step-actions"><a class="vy-iconbtn" href="${gmapsUrl(h.lat,h.lng,h.name||h.address)}" target="_blank" rel="noopener" title="Ouvrir dans Google Maps" onclick="event.stopPropagation()">🧭</a><button class="vy-iconbtn" data-edit-hotel-from-lieux="${h.id}">✎</button></div>
-          </div>`).join('') : `<div class="vy-empty-hint">${(t.places.length||t.hotels.length)?'Aucun lieu dans les catégories sélectionnées.':'Aucun lieu ajouté pour le moment.'}</div>`}
+          </div>`).join('') : '') : `<div class="vy-empty-hint">${(t.places.length||t.hotels.length)?'Aucun lieu dans les catégories sélectionnées.':'Aucun lieu ajouté pour le moment.'}</div>`}
         <div class="vy-attrib">Carte © OpenStreetMap contributors</div>
       </div>
       <div class="vy-map-wrap" id="vyMapWrap">
@@ -1821,6 +2001,12 @@ function renderLieux(c){
     if(hiddenCats.has(cat)) hiddenCats.delete(cat); else hiddenCats.add(cat);
     renderLieux(c);
   }));
+  c.querySelectorAll('[data-filter-type]').forEach(btn=>btn.addEventListener('click', ()=>{
+    const type = btn.getAttribute('data-filter-type');
+    if(type==='hotel'){ hideHotels=!hideHotels; renderLieux(c); }
+    else if(type==='transport'){ hideTransport=!hideTransport; renderLieux(c); }
+    else if(type==='hide-all'){ hiddenCats=new Set(usedCats); hideHotels=true; hideTransport=true; renderLieux(c); }
+  }));
   c.querySelectorAll('[data-place-row]').forEach(row=>row.addEventListener('click', (e)=>{
     if(e.target.closest('.vy-step-actions')) return;
     focusPlaceOnMap(row.getAttribute('data-place-row'));
@@ -1831,14 +2017,36 @@ function renderLieux(c){
   }));
   ensureLeaflet().then(drawMap);
 }
+function updatePlaceListSelection(id){
+  document.querySelectorAll('.vy-place-row').forEach(r=>r.classList.toggle('selected', r.getAttribute('data-place-row')===id || r.getAttribute('data-hotel-row')===id));
+}
 function focusPlaceOnMap(id){
   selectedPlaceId = id;
-  document.querySelectorAll('.vy-place-row').forEach(r=>r.classList.toggle('selected', r.getAttribute('data-place-row')===id || r.getAttribute('data-hotel-row')===id));
+  updatePlaceListSelection(id);
   const p = currentTrip.places.find(x=>x.id===id) || currentTrip.hotels.find(x=>x.id===id);
   if(!p || !p.lat || !p.lng || !mapObj) return;
   mapObj.flyTo([p.lat, p.lng], Math.max(mapObj.getZoom(), 15), { duration: 0.6 });
   const marker = placeMarkers[id];
   if(marker) marker.openPopup();
+}
+function focusTransportOnMap(id){
+  if(!mapObj) return;
+  const tr = currentTrip.transport.find(x=>x.id===id);
+  if(!tr) return;
+  const pts = [];
+  if(tr.fromLat && tr.fromLng) pts.push([tr.fromLat, tr.fromLng]);
+  if(tr.toLat && tr.toLng) pts.push([tr.toLat, tr.toLng]);
+  if(!pts.length) return;
+  if(pts.length===2) mapObj.flyToBounds(pts, { padding:[60,60], duration:0.6 });
+  else mapObj.flyTo(pts[0], Math.max(mapObj.getZoom(), 15), { duration:0.6 });
+  const entry = transportMarkers[id];
+  if(entry){ if(entry.from) entry.from.openPopup(); else if(entry.to) entry.to.openPopup(); }
+}
+function goToTransportOnLieuxTab(id){
+  activeTab = 'lieux';
+  if(hideTransport) hideTransport = false;
+  renderMain();
+  setTimeout(()=>focusTransportOnMap(id), 150);
 }
 function openPlaceDialog(id){
   const existing = id ? currentTrip.places.find(x=>x.id===id) : { name:'', category:'autre', notes:'', lat:null, lng:null };
@@ -1885,10 +2093,15 @@ function renderTransport(c){
   document.getElementById('vyAddTransport').addEventListener('click', ()=>openTransportDialog(null));
   c.querySelectorAll('[data-edit-transport]').forEach(b=>b.addEventListener('click', ()=>openTransportDialog(b.getAttribute('data-edit-transport'))));
   c.querySelectorAll('[data-del-transport]').forEach(b=>b.addEventListener('click', ()=>deleteItem('transport', b.getAttribute('data-del-transport'))));
+  c.querySelectorAll('[data-transport-card]').forEach(card=>card.addEventListener('click', (e)=>{
+    if(e.target.closest('.vy-ticket-actions')) return;
+    goToTransportOnLieuxTab(card.getAttribute('data-transport-card'));
+  }));
 }
 function transportCard(tr){
   const day = currentTrip.days.find(d=>d.id===tr.dayId);
-  return `<div class="vy-ticket" style="margin-bottom:10px;">
+  const hasCoords = (tr.fromLat && tr.fromLng) || (tr.toLat && tr.toLng);
+  return `<div class="vy-ticket" style="margin-bottom:10px;${hasCoords?'cursor:pointer;':''}" ${hasCoords?`data-transport-card="${tr.id}"`:''}>
     <div class="vy-ticket-actions"><button class="vy-iconbtn" data-edit-transport="${tr.id}">✎</button><button class="vy-iconbtn" data-del-transport="${tr.id}">✕</button></div>
     <div class="vy-ticket-body">
       <div class="vy-ticket-route">
@@ -2141,7 +2354,7 @@ function computeBudgetTotals(){
 }
 function renderBudget(c){
   const t = currentTrip;
-  const cur = t.meta.currency || 'EUR';
+  const cur = 'EUR';
   const { categories, grandTotal } = computeBudgetTotals();
   const target = t.meta.budgetTarget;
   const maxCat = Math.max(1, ...categories.map(x=>x.amount));
@@ -2154,7 +2367,6 @@ function renderBudget(c){
   c.innerHTML = `
     <div class="vy-section-head">
       <h3>Budget</h3>
-      <select id="vyBudgetCurrency" style="width:auto;max-width:220px;">${Object.entries(CURRENCIES).map(([k,v])=>`<option value="${k}" ${cur===k?'selected':''}>${v}</option>`).join('')}</select>
     </div>
     <div class="vy-stats">
       <div class="vy-stat"><div class="n">${fmtMoney(grandTotal, cur)}</div><div class="l">Total dépensé</div></div>
@@ -2183,7 +2395,6 @@ function renderBudget(c){
 
   const setBtn = document.getElementById('vySetBudgetTarget');
   if(setBtn) setBtn.addEventListener('click', openEditTripDialog);
-  document.getElementById('vyBudgetCurrency').addEventListener('change', (e)=> updateTripMeta({ currency: e.target.value }));
   document.getElementById('vyAddExpense').addEventListener('click', ()=>openExpenseDialog(null));
   c.querySelectorAll('[data-edit-expense]').forEach(b=>b.addEventListener('click', ()=>openExpenseDialog(b.getAttribute('data-edit-expense'))));
   c.querySelectorAll('[data-del-expense]').forEach(b=>b.addEventListener('click', ()=>deleteItem('expenses', b.getAttribute('data-del-expense'))));
@@ -2359,6 +2570,7 @@ function drawMap(){
   markersLayer.clearLayers();
   routeLayer.clearLayers();
   placeMarkers = {};
+  transportMarkers = {};
   const t = currentTrip;
   const bounds = [];
   const dotIcon = (color)=> L.divIcon({ className:'', html:`<div style="width:14px;height:14px;border-radius:50%;background:${color};border:2px solid #fff;box-shadow:0 0 0 1px ${color};"></div>`, iconSize:[14,14] });
@@ -2367,29 +2579,29 @@ function drawMap(){
     if(hiddenCats.has(p.category||'autre')) return;
     if(p.lat && p.lng){
       const color = CAT_COLORS[p.category] || CAT_COLORS.autre;
-      const marker = L.marker([p.lat,p.lng], {icon: dotIcon(color)}).addTo(markersLayer).bindPopup(`<b>${(CATS[p.category]||CATS.autre).split(' ')[0]} ${esc(p.name)}</b><br>${esc(p.notes||'')}`);
+      const marker = L.marker([p.lat,p.lng], {icon: dotIcon(color)}).addTo(markersLayer).bindPopup(`<b>${(CATS[p.category]||CATS.autre).split(' ')[0]} ${esc(p.name)}</b><br>${esc(p.notes||'')}`).bindTooltip(`${esc(p.name)}`, {permanent:false, direction:'top'});
+      marker.on('popupopen', ()=>{ selectedPlaceId = p.id; updatePlaceListSelection(p.id); });
       placeMarkers[p.id] = marker;
       bounds.push([p.lat,p.lng]);
     }
   });
-  t.hotels.forEach(h=>{ if(h.lat && h.lng){ const marker = L.marker([h.lat,h.lng], {icon: dotIcon(HOTEL_COLOR)}).addTo(markersLayer).bindPopup(`<b>🏨 ${esc(h.name)}</b><br>${esc(h.address||'')}`); placeMarkers[h.id] = marker; bounds.push([h.lat,h.lng]); } });
+  t.hotels.forEach(h=>{ if(!hideHotels && h.lat && h.lng){ const marker = L.marker([h.lat,h.lng], {icon: dotIcon(HOTEL_COLOR)}).addTo(markersLayer).bindPopup(`<b>🏨 ${esc(h.name)}</b><br>${esc(h.address||'')}`).bindTooltip(`${esc(h.name)}`, {permanent:false, direction:'top'}); marker.on('popupopen', ()=>{ selectedPlaceId = h.id; updatePlaceListSelection(h.id); }); placeMarkers[h.id] = marker; bounds.push([h.lat,h.lng]); } });
   t.transport.forEach(tr=>{
-    if(tr.fromLat && tr.fromLng){ L.marker([tr.fromLat,tr.fromLng], {icon: dotIcon(TRANSIT_COLOR)}).addTo(markersLayer).bindPopup(`<b>${esc(tr.fromName)}</b>`); bounds.push([tr.fromLat,tr.fromLng]); }
-    if(tr.toLat && tr.toLng){ L.marker([tr.toLat,tr.toLng], {icon: dotIcon(TRANSIT_COLOR)}).addTo(markersLayer).bindPopup(`<b>${esc(tr.toName)}</b>`); bounds.push([tr.toLat,tr.toLng]); }
+    const entry = {};
+    if(!hideTransport && tr.fromLat && tr.fromLng){ const m = L.marker([tr.fromLat,tr.fromLng], {icon: dotIcon(TRANSPORT_LINE_COLORS[tr.mode]||TRANSIT_COLOR)}).addTo(markersLayer).bindPopup(`<b>${esc(tr.fromName)}</b>`).bindTooltip(`${esc(tr.fromName)}`, {permanent:false, direction:'top'}); entry.from = m; bounds.push([tr.fromLat,tr.fromLng]); }
+    if(!hideTransport && tr.toLat && tr.toLng){ const m = L.marker([tr.toLat,tr.toLng], {icon: dotIcon(TRANSPORT_LINE_COLORS[tr.mode]||TRANSIT_COLOR)}).addTo(markersLayer).bindPopup(`<b>${esc(tr.toName)}</b>`).bindTooltip(`${esc(tr.toName)}`, {permanent:false, direction:'top'}); entry.to = m; bounds.push([tr.toLat,tr.toLng]); }
+    transportMarkers[tr.id] = entry;
   });
 
-  // overlay of the day-by-day itinerary paths (dashed, transport legs only —
-  // "lieux à visiter" are shown as markers but are not connected by a line)
-  t.days.forEach(d=>{
-    d.steps.forEach(s=>{
-      if(s.type==='transport'){
-        const tr = t.transport.find(x=>x.id===s.ref);
-        if(tr && tr.fromLat && tr.fromLng && tr.toLat && tr.toLng){
-          L.polyline([[tr.fromLat,tr.fromLng],[tr.toLat,tr.toLng]], {color:'#C1401F', weight:3, dashArray:'6 4', opacity:.8}).addTo(routeLayer);
-        }
+  // Lignes colorées par mode de transport
+  if(!hideTransport){
+    t.transport.forEach(tr=>{
+      if(tr.fromLat && tr.fromLng && tr.toLat && tr.toLng){
+        const lineColor = TRANSPORT_LINE_COLORS[tr.mode] || TRANSIT_COLOR;
+        L.polyline([[tr.fromLat,tr.fromLng],[tr.toLat,tr.toLng]], {color:lineColor, weight:3, dashArray:'6 4', opacity:.8}).addTo(routeLayer);
       }
     });
-  });
+  }
 
 
   const tripCountry = t.meta && t.meta.country;
@@ -2424,8 +2636,18 @@ function openNewTripDialog(){
         <div class="vy-field"><label>Retour</label><input type="date" name="endDate" required></div>
       </div>
     </div>
+    <div class="vy-dialog-section">
+      <div class="vy-dialog-section-title">Budget</div>
+      <div class="vy-row">
+        <div class="vy-field" style="margin-bottom:0">
+          <label>Budget prévisionnel <span style="font-weight:400;text-transform:none;letter-spacing:0">(optionnel)</span></label>
+          <div class="vy-input-icon-wrap"><span class="ico">💰</span><input type="number" step="0.01" min="0" name="budgetTarget" placeholder="0.00"></div>
+        </div>
+      </div>
+    </div>
   `, async (fd)=>{
-    const meta = { name: fd.get('name'), country: fd.get('country'), startDate: fd.get('startDate'), endDate: fd.get('endDate') };
+    const budgetTarget = fd.get('budgetTarget') ? parseFloat(fd.get('budgetTarget')) : null;
+    const meta = { name: fd.get('name'), country: fd.get('country'), startDate: fd.get('startDate'), endDate: fd.get('endDate'), currency: 'EUR', budgetTarget };
     await createTrip(meta);
     dialog.close();
   }, 'Créer le voyage');
@@ -2449,10 +2671,6 @@ function openEditTripDialog(){
       <div class="vy-dialog-section-title">Budget</div>
       <div class="vy-row">
         <div class="vy-field" style="margin-bottom:0">
-          <label>Devise</label>
-          <select name="currency">${Object.entries(CURRENCIES).map(([k,v])=>`<option value="${k}" ${(m.currency||'EUR')===k?'selected':''}>${v}</option>`).join('')}</select>
-        </div>
-        <div class="vy-field" style="margin-bottom:0">
           <label>Budget prévisionnel <span style="font-weight:400;text-transform:none;letter-spacing:0">(optionnel)</span></label>
           <div class="vy-input-icon-wrap"><span class="ico">💰</span><input type="number" step="0.01" min="0" name="budgetTarget" value="${m.budgetTarget??''}" placeholder="0.00"></div>
         </div>
@@ -2460,7 +2678,7 @@ function openEditTripDialog(){
     </div>
   `, async (fd)=>{
     const budgetTarget = fd.get('budgetTarget') ? parseFloat(fd.get('budgetTarget')) : null;
-    const patch = { name: fd.get('name'), country: fd.get('country'), startDate: fd.get('startDate'), endDate: fd.get('endDate'), currency: fd.get('currency'), budgetTarget };
+    const patch = { name: fd.get('name'), country: fd.get('country'), startDate: fd.get('startDate'), endDate: fd.get('endDate'), currency: 'EUR', budgetTarget };
     await updateTripMeta(patch);
     dialog.close();
   });
