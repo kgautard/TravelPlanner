@@ -4,6 +4,18 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Planificateur de Voyage</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#C1401F">
+<script>
+// Réglé avant le premier rendu pour éviter un flash clair/sombre au chargement.
+(function(){
+  try{
+    var t = localStorage.getItem('vy_theme');
+    if(!t) t = (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
+    document.documentElement.setAttribute('data-theme', t);
+  }catch(e){}
+})();
+</script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
 
@@ -36,6 +48,24 @@
   display: flex;
   align-items: stretch;
   position: relative;
+}
+html[data-theme="dark"] .vy-root {
+  --paper: #1E1A15;
+  --paper-dim: #16130F;
+  --paper-card: #262019;
+  --ink: #F1EAD9;
+  --ink-soft: #B8AFA0;
+  --ink-faint: #766E60;
+  --vermilion: #E2703A;
+  --vermilion-dark: #F0946A;
+  --kraft: #C9A876;
+  --transit: #5FA6A3;
+  --transit-dark: #7FC1BD;
+  --line: #3A3327;
+  --success: #6FA96F;
+  --danger: #E2685C;
+  --warning: #F0A93E;
+  --shadow: 0 1px 2px rgba(0,0,0,.4), 0 4px 14px rgba(0,0,0,.35);
 }
 .vy-root a { color: inherit; }
 .vy-root button { font-family: var(--font-body); cursor: pointer; }
@@ -298,6 +328,54 @@
 .vy-check-item .txt { flex: 1; }
 .vy-checkform { display: flex; gap: 6px; margin-top: 10px; }
 
+/* Journal */
+.vy-journal-day { background: var(--paper-card); border: 1px solid var(--line); border-radius: 8px; margin-bottom: 14px; overflow: hidden; box-shadow: var(--shadow); }
+.vy-journal-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; padding: 12px 16px; background: var(--paper-dim); }
+.vy-journal-head .lbl { font-family: var(--font-display); font-weight: 600; font-size: 15px; }
+.vy-journal-head .dt { font-family: var(--font-mono); font-size: 11px; color: var(--ink-soft); }
+.vy-journal-mood { display: flex; gap: 4px; flex-shrink: 0; }
+.vy-mood-btn {
+  background: transparent; border: 1.5px solid var(--line); border-radius: 8px;
+  width: 30px; height: 30px; font-size: 15px; display: flex; align-items: center; justify-content: center;
+  opacity: .45; transition: opacity .15s, border-color .15s, background .15s;
+}
+.vy-mood-btn:hover { opacity: .8; }
+.vy-mood-btn.active { opacity: 1; border-color: var(--vermilion); background: rgba(193,64,31,.1); }
+.vy-journal-body { padding: 14px 16px; }
+.vy-journal-body textarea { min-height: 110px; resize: vertical; line-height: 1.55; }
+.vy-journal-meta { display: flex; justify-content: flex-end; margin-top: 6px; font-size: 11px; color: var(--ink-faint); font-family: var(--font-mono); }
+
+.vy-modeles-section { margin-top: 16px; }
+.vy-modeles-section h4 { font-family: var(--font-display); font-size: 15.5px; margin: 0 0 8px; }
+.vy-modeles-grid { display: flex; flex-direction: column; gap: 10px; }
+.vy-modele-card {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  background: var(--paper-card);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 14px 16px;
+}
+.vy-modele-card-title { font-family: var(--font-body); font-weight: 700; font-size: 14px; color: var(--ink); margin: 0; }
+.vy-modele-count { font-size: 12px; color: var(--ink-soft); margin-top: 3px; }
+.vy-modele-actions { display: flex; gap: 4px; flex-shrink: 0; }
+.vy-modele-actions .vy-iconbtn { font-size: 15px; padding: 6px 8px; }
+
+.vy-modele-picker-list { display: grid; gap: 10px; margin-top: 8px; }
+.vy-modele-picker-item {
+  display: block; text-align: left; cursor: pointer;
+  padding: 11px 12px;
+  border: 1.5px solid var(--line);
+  border-radius: 8px;
+  background: var(--paper-card);
+  color: var(--ink);
+  font-size: 13px;
+  transition: border-color .15s, box-shadow .15s, background .15s;
+}
+.vy-modele-picker-item strong { font-family: var(--font-display); font-weight: 600; }
+.vy-modele-picker-item .sub { display: block; font-size: 11.5px; color: var(--ink-soft); margin-top: 2px; }
+.vy-modele-picker-item:hover { border-color: var(--vermilion); box-shadow: 0 0 0 3px rgba(193,64,31,.1); }
+.vy-modele-picker-item:has(input:checked) { border-color: var(--vermilion); background: rgba(193,64,31,.06); box-shadow: 0 0 0 3px rgba(193,64,31,.1); }
+
 /* Map tab */
 .vy-map-layout { display: grid; grid-template-columns: 300px 1fr; gap: 14px; align-items: start; }
 @media (max-width: 900px) { .vy-map-layout { grid-template-columns: 1fr; } }
@@ -322,39 +400,54 @@
 .vy-map-wrap.vy-map-fullscreen .vy-map-fs-btn { top: calc(10px + env(safe-area-inset-top) + 6px); right: 16px; }
 
 /* Dialog */
+@keyframes vyDialogIn {
+  from { opacity: 0; transform: translateY(10px) scale(.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes vyBackdropIn { from { opacity: 0; } to { opacity: 1; } }
 .vy-root dialog.vy-dialog {
-  border: none; border-radius: 12px; padding: 0;
+  border: none; border-radius: 18px; padding: 0;
   width: 540px; max-width: 95vw;
-  box-shadow: 0 20px 60px rgba(36,39,46,.28), 0 4px 12px rgba(36,39,46,.12);
+  box-shadow: 0 24px 70px -12px rgba(36,39,46,.35), 0 8px 24px rgba(36,39,46,.14), 0 0 0 1px rgba(36,39,46,.04);
   background: var(--paper);
+  overflow: hidden;
+  animation: vyDialogIn .22s cubic-bezier(.22,.9,.32,1);
 }
-.vy-root dialog.vy-dialog::backdrop { background: rgba(36,39,46,.55); backdrop-filter: blur(2px); }
+.vy-root dialog.vy-dialog::backdrop {
+  background: rgba(28,26,20,.5);
+  backdrop-filter: blur(3px);
+  animation: vyBackdropIn .22s ease;
+}
 .vy-dialog-head {
-  padding: 20px 24px 16px;
-  display: flex; align-items: center; justify-content: space-between;
-  background: var(--ink); border-radius: 12px 12px 0 0;
+  padding: 20px 24px;
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  background: linear-gradient(135deg, var(--ink) 0%, #34302a 100%);
+  position: relative;
 }
-.vy-dialog-head h4 { font-family: var(--font-display); font-size: 18px; margin: 0; color: var(--paper); font-weight: 600; }
-.vy-close-x {
-  background: rgba(255,255,255,.1); border: none; width: 28px; height: 28px; border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 14px; color: rgba(246,241,227,.8); cursor: pointer; line-height: 1;
+.vy-dialog-head::after {
+  content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 3px;
+  background: linear-gradient(90deg, var(--vermilion), var(--kraft));
 }
-.vy-close-x:hover { background: rgba(255,255,255,.2); color: var(--paper); }
+.vy-dialog-head h4 { font-family: var(--font-display); font-size: 18.5px; margin: 0; color: var(--paper); font-weight: 600; letter-spacing: -.01em; }
 .vy-dialog-body { padding: 0; max-height: 68vh; overflow-y: auto; }
 .vy-dialog-foot {
-  padding: 16px 24px; display: flex; justify-content: flex-end; gap: 8px;
-  border-top: 1px solid var(--line); background: var(--paper-dim); border-radius: 0 0 12px 12px;
+  padding: 16px 24px; display: flex; justify-content: flex-end; gap: 10px;
+  background: var(--paper-dim); position: relative;
+  box-shadow: 0 -1px 0 var(--line), inset 0 1px 0 rgba(255,255,255,.4);
 }
 
 /* Form sections */
 .vy-dialog-section {
   padding: 18px 24px 16px; border-bottom: 1px solid var(--line);
+  transition: background .15s;
 }
 .vy-dialog-section:last-child { border-bottom: none; }
 .vy-dialog-section-title {
   font-family: var(--font-mono); font-size: 10px; text-transform: uppercase; letter-spacing: .1em;
   color: var(--kraft); font-weight: 600; margin-bottom: 14px; display: flex; align-items: center; gap: 8px;
+}
+.vy-dialog-section-title::before {
+  content: ''; width: 4px; height: 4px; border-radius: 50%; background: var(--vermilion); flex-shrink: 0;
 }
 .vy-dialog-section-title::after { content:''; flex:1; height:1px; background: var(--line); }
 .vy-date-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
@@ -367,16 +460,36 @@
   font-size: 10.5px; text-transform: uppercase; letter-spacing: .07em;
   color: var(--ink-soft); font-weight: 700; display: block; margin-bottom: 5px;
 }
+.vy-req { color: var(--vermilion); font-weight: 700; }
 .vy-root input, .vy-root select, .vy-root textarea {
   font-family: var(--font-body); font-size: 13.5px;
   background: var(--paper-card); border: 1.5px solid var(--line);
-  border-radius: 5px; padding: 9px 12px; color: var(--ink); width: 100%;
+  border-radius: 7px; padding: 9px 12px; color: var(--ink); width: 100%;
   transition: border-color .15s, box-shadow .15s;
 }
 .vy-root input:focus, .vy-root select:focus, .vy-root textarea:focus {
-  outline: none; border-color: var(--vermilion); box-shadow: 0 0 0 3px rgba(193,64,31,.1);
+  outline: none; border-color: var(--vermilion); box-shadow: 0 0 0 3px rgba(193,64,31,.12);
 }
-.vy-root input::placeholder { color: var(--ink-faint); }
+.vy-root input::placeholder, .vy-root textarea::placeholder { color: var(--ink-faint); }
+.vy-root input[type=radio], .vy-root input[type=checkbox] { width: auto; accent-color: var(--vermilion); }
+.vy-root select {
+  appearance: none; -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='9' viewBox='0 0 14 9'%3E%3Cpath d='M1 1l6 6 6-6' fill='none' stroke='%23676C78' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px;
+  cursor: pointer;
+}
+.vy-root input[type=file] {
+  padding: 7px 10px; cursor: pointer; color: var(--ink-soft); font-size: 12.5px;
+}
+.vy-root input[type=file]::file-selector-button {
+  font-family: var(--font-body); font-weight: 600; font-size: 12px; cursor: pointer;
+  background: var(--paper-dim); color: var(--ink); border: 1.5px solid var(--line);
+  border-radius: 4px; padding: 6px 12px; margin-right: 10px; transition: border-color .15s, background .15s;
+}
+.vy-root input[type=file]::file-selector-button:hover { background: var(--line); }
+.vy-root input[type=date]::-webkit-calendar-picker-indicator,
+.vy-root input[type=datetime-local]::-webkit-calendar-picker-indicator,
+.vy-root input[type=time]::-webkit-calendar-picker-indicator { cursor: pointer; opacity: .65; }
 .vy-input-icon-wrap { position: relative; }
 .vy-input-icon-wrap input { padding-left: 34px; }
 .vy-input-icon-wrap .ico { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); font-size: 14px; pointer-events: none; }
@@ -399,11 +512,13 @@
 .vy-welcome-screen {
   margin: auto; max-width: 480px; text-align: center; padding: 40px 30px;
   background: var(--paper-card); border: 1px solid var(--line); border-radius: 8px; box-shadow: var(--shadow);
+  position: relative;
 }
 .vy-welcome-screen h1 { font-family: var(--font-display); font-size: 28px; margin: 0 0 12px; }
 .vy-welcome-screen p { color: var(--ink-soft); font-size: 13.5px; margin: 0 0 22px; line-height: 1.55; }
-.vy-welcome-actions { display: flex; flex-direction: column; gap: 10px; }
+.vy-welcome-actions { display: flex; flex-direction: column; gap: 10px; align-items: center; }
 .vy-welcome-note { font-size: 11.5px !important; color: var(--ink-faint) !important; margin: 16px 0 0 !important; }
+#vyWelOpenBtn, #vyWelNewBtn { width: fit-content; }
 
 /* ---------- Top header / save status ---------- */
 .vy-top-header { display: flex; justify-content: space-between; align-items: center; padding: 14px 20px 0; gap: 12px; }
@@ -539,23 +654,35 @@
   .vy-btn.small { padding: 8px 12px; }
   .vy-iconbtn { padding: 7px 9px; font-size: 14px; }
   .vy-root input, .vy-root select, .vy-root textarea { padding: 11px 12px; font-size: 16px; }
+  .vy-root select { padding-right: 32px; }
+  .vy-root input[type=file] { padding: 9px 10px; }
   .vy-check-item input[type=checkbox] { width: 19px; height: 19px; }
 
   .vy-welcome-screen { padding: 30px 20px; }
 }
+
+.vy-corner-actions { position: fixed; top: 14px; right: 16px; z-index: 500; display: flex; gap: 8px; }
+.vy-install-btn {
+  border: 1px solid var(--line); background: var(--paper-card); color: var(--ink);
+  border-radius: 20px; padding: 7px 12px; font-size: 12.5px; font-weight: 600;
+  display: inline-flex; align-items: center; gap: 6px; box-shadow: var(--shadow);
+}
+.vy-install-btn:hover { border-color: var(--vermilion); }
 </style>
 </head>
 <body>
 
 <div class="vy-root" id="vyRoot">
+  <div class="vy-corner-actions">
+    <button type="button" class="vy-install-btn" id="vyInstallBtn" style="display:none;" title="Installer l'application pour un usage hors-ligne">⬇️ Installer l'app</button>
+  </div>
   <div id="vyWelcome" class="vy-welcome-screen">
     <h1>✈ Carnet de Voyage</h1>
     <p>Ouvrez un fichier de voyage existant, ou créez-en un nouveau. Vos données restent en local sur votre ordinateur — rien n'est envoyé ailleurs.</p>
     <div class="vy-welcome-actions">
       <button class="vy-btn" id="vyWelResumeBtn" style="display:none;">↺ Reprendre le dernier fichier</button>
-      <button class="vy-btn" id="vyWelOpenBtn">📂 Ouvrir un fichier existant</button>
-      <button class="vy-btn secondary" id="vyWelNewBtn">🆕 Créer une nouvelle sauvegarde</button>
-      <button class="vy-btn secondary" id="vyWelRestoreCacheBtn" style="display:none;">🕓 Restaurer la dernière session</button>
+      <button class="vy-btn" id="vyWelOpenBtn" title="Fichier .json contenant toutes vos données de voyage (vols, hôtels, budget, etc.)">📂 Ouvrir un carnet de voyage existant</button>
+      <button class="vy-btn secondary" id="vyWelNewBtn" title="Fichier .json contenant toutes vos données de voyage (vols, hôtels, budget, etc.)">🆕 Créer un nouveau carnet de voyage</button>
     </div>
     <p class="vy-welcome-note" id="vyWelNote"></p>
   </div>
@@ -574,8 +701,14 @@
         <div class="vy-save-status-container" id="vySaveStatusContainer">
           <span class="vy-status-dot green" id="vyStatusDot"></span>
           <span id="vyStatusText">—</span>
-          <button class="vy-save-menu-btn" id="vySaveMenuBtn" title="Menu sauvegarde">💾</button>
+          <button class="vy-save-menu-btn" id="vySaveMenuBtn" title="Menu sauvegarde">☰</button>
           <div class="vy-save-dropdown" id="vySaveDropdown">
+            <div class="vy-menu-label" style="color: var(--ink-faint); font-size: 9px; margin-bottom: 8px; padding: 6px 14px 0;">Carnet de Voyage v1.2.0</div>
+            <button type="button" id="menuThemeBtn" class="vy-menu-item">
+              <span class="vy-menu-icon" id="menuThemeIcon">🌙</span>
+              <span class="vy-menu-text"><span class="vy-menu-title" id="menuThemeTitle">Mode sombre</span><span class="vy-menu-desc">Bascule l'apparence claire/sombre de l'application</span></span>
+            </button>
+            <div class="vy-menu-sep"></div>
             <div class="vy-menu-label">Sauvegarde (.json)</div>
             <button type="button" id="menuExportBtn" class="vy-menu-item">
               <span class="vy-menu-icon">💾</span>
@@ -613,7 +746,6 @@
 <dialog class="vy-dialog" id="vyDialog">
   <div class="vy-dialog-head">
     <h4 id="vyDialogTitle">Titre</h4>
-    <button class="vy-close-x" id="vyDialogClose">✕</button>
   </div>
   <form id="vyDialogForm">
     <div class="vy-dialog-body" id="vyDialogBody"></div>
@@ -640,6 +772,8 @@ let transportMarkers = {};
 let hideHotels = false;
 let hideTransport = false;
 let mapCenteredForTripId = null;
+let modeles = [];
+let checklistView = 'packing'; // 'packing' ou 'modeles'
 
 const CATS = { temple:'⛩ Temple/Sanctuaire', nature:'🌿 Nature', randonnee:'🥾 Randonnée', ville:'🏙 Ville/Quartier', food:'🍜 Restaurant', shopping:'🛍 Shopping', musee:'🖼 Musée', autre:'📍 Autre' };
 const CAT_COLORS = { temple:'#C1401F', nature:'#4B7A4B', randonnee:'#7A5C2E', ville:'#4A5C8C', food:'#D97706', shopping:'#A6407B', musee:'#6B4FA0', autre:'#8A8D7A' };
@@ -660,6 +794,7 @@ const TRANSPORT_OVERHEAD = { train:8,  metro:5,  bus:5,  ferry:15, voiture:0,  v
 const EXPENSE_CATS = { activite:'🎟 Activités & visites', nourriture:'🍜 Nourriture', shopping:'🛍 Shopping', assurance:'🛡 Assurance & visas', divers:'💰 Divers' };
 const EXPENSE_CAT_COLORS = { activite:'#6B4FA0', nourriture:'#D97706', shopping:'#A6407B', assurance:'#4A5C8C', divers:'#8A8D7A' };
 const CURRENCIES = { EUR:'€ Euro', USD:'$ Dollar US', JPY:'¥ Yen japonais', GBP:'£ Livre sterling', CHF:'CHF Franc suisse' };
+const MOODS = ['😍','😊','😐','😕','😫'];
 
 const root = document.getElementById('vyRoot');
 const mainEl = document.getElementById('vyMainContent');
@@ -673,7 +808,6 @@ const welcomeScreen = document.getElementById('vyWelcome');
 const appLayout = document.getElementById('vyAppLayout');
 const welNote = document.getElementById('vyWelNote');
 const welResumeBtn = document.getElementById('vyWelResumeBtn');
-const welRestoreCacheBtn = document.getElementById('vyWelRestoreCacheBtn');
 const fileNameEl = document.getElementById('vyFileName');
 const statusDot = document.getElementById('vyStatusDot');
 const statusText = document.getElementById('vyStatusText');
@@ -688,13 +822,11 @@ function closeSidebarDrawer(){ vyRootEl.classList.remove('vy-sidebar-open'); }
 document.getElementById('vyHamburgerBtn').addEventListener('click', ()=> vyRootEl.classList.toggle('vy-sidebar-open'));
 sidebarBackdrop.addEventListener('click', closeSidebarDrawer);
 tripListEl.addEventListener('click', (e)=>{ if(e.target.closest('[data-trip]')) closeSidebarDrawer(); });
-document.getElementById('vyDialogClose').addEventListener('click', ()=>dialog.close());
 document.getElementById('vyDialogCancel').addEventListener('click', ()=>dialog.close());
 
 document.getElementById('vyWelOpenBtn').addEventListener('click', openExistingFile);
 document.getElementById('vyWelNewBtn').addEventListener('click', createNewFile);
 welResumeBtn.addEventListener('click', resumeRememberedHandle);
-welRestoreCacheBtn.addEventListener('click', restoreFromLocalCache);
 saveMenuBtn.addEventListener('click', (e)=>{ e.stopPropagation(); saveDropdown.classList.toggle('show'); });
 document.addEventListener('click', ()=> saveDropdown.classList.remove('show'));
 document.getElementById('menuExportBtn').addEventListener('click', ()=>downloadCopy(buildBackupBaseName()+'.json'));
@@ -712,6 +844,44 @@ fileInput.addEventListener('change', (e)=>{
 window.addEventListener('beforeunload', (e)=>{
   if(hasUnsavedChanges){ e.preventDefault(); e.returnValue = ''; return ''; }
 });
+
+// ---------------------------------------------------------------- thème + PWA
+const menuThemeBtn = document.getElementById('menuThemeBtn');
+const menuThemeIcon = document.getElementById('menuThemeIcon');
+const menuThemeTitle = document.getElementById('menuThemeTitle');
+const installBtn = document.getElementById('vyInstallBtn');
+function applyTheme(theme){
+  document.documentElement.setAttribute('data-theme', theme);
+  menuThemeIcon.textContent = theme === 'dark' ? '☀️' : '🌙';
+  menuThemeTitle.textContent = theme === 'dark' ? 'Mode clair' : 'Mode sombre';
+}
+applyTheme(document.documentElement.getAttribute('data-theme') || 'light');
+menuThemeBtn.addEventListener('click', ()=>{
+  const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+  try{ localStorage.setItem('vy_theme', next); }catch(e){}
+  applyTheme(next);
+});
+
+let deferredInstallPrompt = null;
+window.addEventListener('beforeinstallprompt', (e)=>{
+  e.preventDefault();
+  deferredInstallPrompt = e;
+  installBtn.style.display = 'inline-flex';
+});
+installBtn.addEventListener('click', async ()=>{
+  if(!deferredInstallPrompt) return;
+  deferredInstallPrompt.prompt();
+  await deferredInstallPrompt.userChoice;
+  deferredInstallPrompt = null;
+  installBtn.style.display = 'none';
+});
+window.addEventListener('appinstalled', ()=>{ installBtn.style.display = 'none'; });
+
+if('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')){
+  window.addEventListener('load', ()=>{
+    navigator.serviceWorker.register('sw.js').catch(e=>console.warn('Service worker non enregistré', e));
+  });
+}
 
 // ---------------------------------------------------------------- helpers
 let idCounter = 0;
@@ -741,7 +911,7 @@ function generateDays(trip){
   for(let i=0;i<=n;i++){
     const date = addDays(startDate,i);
     if(existing[date]) newDays.push(existing[date]);
-    else newDays.push({ id: genId(), date, label:'Jour '+(i+1), notes:'', steps:[] });
+    else newDays.push({ id: genId(), date, label:'Jour '+(i+1), notes:'', steps:[], journal:'', mood:null });
   }
   trip.days = newDays;
 }
@@ -878,24 +1048,25 @@ async function checkForRememberedFile(){
   }
   if(!pendingHandle){
     try{
-      if(localStorage.getItem('vy_last_payload')){
-        const fname = localStorage.getItem('vy_last_filename') || 'voyages.json';
-        welRestoreCacheBtn.textContent = '🕓 Restaurer la dernière session (' + fname + ')';
-        welRestoreCacheBtn.style.display = 'inline-flex';
-      }
+      // Pas de fichier lié disponible (navigateur sans File System Access, ou app PWA installée) :
+      // on reprend directement depuis le cache local plutôt que d'exiger une réouverture de fichier.
+      if(localStorage.getItem('vy_last_payload')) restoreFromLocalCache();
     }catch(e){}
   }
 }
 
 function buildFullPayload(){
-  return { version: 1, savedAt: new Date().toISOString(), tripsIndex, trips, currentTripId };
+  return { version: 1, savedAt: new Date().toISOString(), tripsIndex, trips, currentTripId, modeles };
 }
 function loadPayload(data){
   tripsIndex = data.tripsIndex || [];
   trips = data.trips || {};
+  modeles = data.modeles || [];
   Object.values(trips).forEach(t=>{
     if(!Array.isArray(t.expenses)) t.expenses = [];
     if(!t.meta.currency) t.meta.currency = 'EUR';
+    if(!t.packingList) t.packingList = [];
+    (t.days||[]).forEach(d=>{ if(d.journal==null) d.journal = ''; if(d.mood===undefined) d.mood = null; });
   });
   currentTripId = (data.currentTripId && trips[data.currentTripId]) ? data.currentTripId : (tripsIndex[0] ? tripsIndex[0].id : null);
   currentTrip = currentTripId ? trips[currentTripId] : null;
@@ -1454,7 +1625,7 @@ function renderMain(){
 
   const tabs = [
     ['apercu','Aperçu'], ['vols','Vols'], ['hotels','Hôtels'], ['itineraire','Itinéraire'],
-    ['lieux','Lieux & Carte'], ['transport','Transport'], ['budget','Budget'], ['checklist','Checklist']
+    ['lieux','Lieux & Carte'], ['transport','Transport'], ['budget','Budget'], ['journal','Journal'], ['checklist','Checklist']
   ];
 
   mainEl.innerHTML = `
@@ -1492,6 +1663,7 @@ function renderTabContent(){
   if(activeTab==='lieux') return renderLieux(c);
   if(activeTab==='transport') return renderTransport(c);
   if(activeTab==='budget') return renderBudget(c);
+  if(activeTab==='journal') return renderJournal(c);
   if(activeTab==='checklist') return renderChecklist(c);
 }
 
@@ -1561,6 +1733,7 @@ function renderApercu(c){
       <div class="vy-stat" data-go-tab="lieux">  <div class="n">${t.places.length}</div><div class="l">Lieux à visiter</div></div>
       <div class="vy-stat" data-go-tab="transport"><div class="n">${t.transport.length}</div><div class="l">Trajets</div></div>
       <div class="vy-stat" data-go-tab="budget"><div class="n">${fmtMoney(computeBudgetTotals().grandTotal)}</div><div class="l">Dépensé</div></div>
+      <div class="vy-stat" data-go-tab="journal"><div class="n">${t.days.filter(d=>(d.journal||'').trim()).length}/${t.days.length}</div><div class="l">Journées racontées</div></div>
       <div class="vy-stat" data-go-tab="checklist"><div class="n">${pct}%</div><div class="l">Check-list faite</div></div>
     </div>
     <div class="vy-section-head"><h3>Jours du voyage</h3></div>
@@ -1893,7 +2066,7 @@ function openHotelDialog(id){
     <div class="vy-dialog-section">
       <div class="vy-dialog-section-title">Informations</div>
       <div class="vy-field">
-        <label>Nom de l'hôtel</label>
+        <label>Nom de l'hôtel <span class="vy-req">*</span></label>
         <div class="vy-input-icon-wrap"><span class="ico">🏨</span><input name="name" value="${esc(existing.name)}" required placeholder="Dormy Inn Shinjuku"></div>
       </div>
       <div class="vy-field">
@@ -2054,7 +2227,7 @@ function openPlaceDialog(id){
     <div class="vy-dialog-section">
       <div class="vy-dialog-section-title">Lieu</div>
       <div class="vy-field">
-        <label>Nom</label>
+        <label>Nom <span class="vy-req">*</span></label>
         <div class="vy-input-icon-wrap"><span class="ico">🔍</span><input name="name" value="${esc(existing.name)}" required placeholder="Fushimi Inari-taisha, Shinjuku Gyoen…"></div>
       </div>
       <div class="vy-field" style="margin-bottom:0">
@@ -2333,6 +2506,69 @@ function openStepDialog(dayId){
   });
 }
 
+// ---------------------------------------------------------------- JOURNAL
+function renderJournal(c){
+  const t = currentTrip;
+  if(!t.days.length){
+    c.innerHTML = `<div class="vy-section-head"><h3>Journal de voyage</h3></div>
+      <div class="vy-empty-hint">Renseignez les dates du voyage (bouton "Modifier" en haut) pour générer les journées et commencer votre journal.</div>`;
+    return;
+  }
+  const writtenCount = t.days.filter(d=>(d.journal||'').trim()).length;
+  c.innerHTML = `
+    <div class="vy-section-head">
+      <h3>Journal de voyage</h3>
+      <p>${writtenCount} / ${t.days.length} journée${t.days.length>1?'s':''} racontée${writtenCount>1?'s':''}</p>
+    </div>
+    ${t.days.map(d=>journalCard(d)).join('')}
+  `;
+  c.querySelectorAll('[data-journal-text]').forEach(ta=>{
+    const meta = c.querySelector(`[data-journal-meta="${ta.getAttribute('data-journal-text')}"]`);
+    const updateMeta = ()=>{ if(meta) meta.textContent = wordCount(ta.value) + ' mot' + (wordCount(ta.value)>1?'s':''); };
+    ta.addEventListener('input', updateMeta);
+    ta.addEventListener('change', ()=>{
+      const day = t.days.find(x=>x.id===ta.getAttribute('data-journal-text'));
+      day.journal = ta.value;
+      markDirty();
+    });
+  });
+  c.querySelectorAll('[data-journal-mood]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const [dayId, mood] = btn.getAttribute('data-journal-mood').split('|');
+      const day = t.days.find(x=>x.id===dayId);
+      day.mood = (day.mood===mood) ? null : mood;
+      markDirty();
+      c.querySelectorAll(`[data-mood-group="${dayId}"] [data-journal-mood]`).forEach(b=>{
+        b.classList.toggle('active', b.getAttribute('data-journal-mood')===`${dayId}|${day.mood}`);
+      });
+    });
+  });
+}
+function wordCount(text){
+  const trimmed = (text||'').trim();
+  return trimmed ? trimmed.split(/\s+/).length : 0;
+}
+function journalCard(d){
+  const words = wordCount(d.journal);
+  return `<div class="vy-journal-day">
+    <div class="vy-journal-head">
+      <div>
+        <div class="lbl">${esc(d.label)}</div>
+        <span class="dt">${fmtDateLong(d.date)}</span>
+      </div>
+      <div class="vy-journal-mood" data-mood-group="${d.id}">
+        ${MOODS.map(m=>`<button type="button" class="vy-mood-btn ${d.mood===m?'active':''}" data-journal-mood="${d.id}|${m}" title="Humeur">${m}</button>`).join('')}
+      </div>
+    </div>
+    <div class="vy-journal-body">
+      <textarea data-journal-text="${d.id}" rows="4" placeholder="Racontez cette journée : ce que vous avez vu, ressenti, mangé, découvert…">${esc(d.journal)}</textarea>
+      <div class="vy-journal-meta">
+        <span data-journal-meta="${d.id}">${words} mot${words>1?'s':''}</span>
+      </div>
+    </div>
+  </div>`;
+}
+
 // ---------------------------------------------------------------- BUDGET
 function computeBudgetTotals(){
   const t = currentTrip;
@@ -2419,7 +2655,7 @@ function openExpenseDialog(id){
     <div class="vy-dialog-section">
       <div class="vy-dialog-section-title">Détail</div>
       <div class="vy-field">
-        <label>Libellé</label>
+        <label>Libellé <span class="vy-req">*</span></label>
         <div class="vy-input-icon-wrap"><span class="ico">📝</span><input name="label" value="${esc(existing.label)}" required placeholder="Dîner izakaya, ticket TeamLab…"></div>
       </div>
       <div class="vy-row">
@@ -2428,7 +2664,7 @@ function openExpenseDialog(id){
           <select name="category">${Object.entries(EXPENSE_CATS).map(([k,v])=>`<option value="${k}" ${existing.category===k?'selected':''}>${v}</option>`).join('')}</select>
         </div>
         <div class="vy-field" style="margin-bottom:0">
-          <label>Montant</label>
+          <label>Montant <span class="vy-req">*</span></label>
           <div class="vy-input-icon-wrap"><span class="ico">💰</span><input type="number" step="0.01" min="0" name="amount" value="${existing.amount??''}" required placeholder="0.00"></div>
         </div>
       </div>
@@ -2450,6 +2686,34 @@ function openExpenseDialog(id){
 // ---------------------------------------------------------------- CHECKLIST
 function renderChecklist(c){
   const t = currentTrip;
+  
+  // Onglets
+  c.innerHTML = `
+    <div class="vy-section-head" style="margin-bottom: 0;">
+      <h3>Check-list</h3>
+    </div>
+    <div class="vy-tabs" style="margin: 0 0 16px;">
+      <button class="vy-tab ${checklistView==='packing'?'active':''}" data-checklist-view="packing">✅ Ma check-list</button>
+      <button class="vy-tab ${checklistView==='modeles'?'active':''}" data-checklist-view="modeles">📋 Modèles de listes</button>
+    </div>
+    <div id="vyChecklistContent"></div>
+  `;
+  
+  c.querySelectorAll('[data-checklist-view]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      checklistView = btn.getAttribute('data-checklist-view');
+      renderChecklist(document.getElementById('vyTabContent'));
+    });
+  });
+  
+  if(checklistView === 'packing'){
+    renderChecklistPacking(document.getElementById('vyChecklistContent'), t);
+  } else {
+    renderChecklistModeles(document.getElementById('vyChecklistContent'));
+  }
+}
+
+function renderChecklistPacking(c, t){
   function col(cat, title){
     const items = t.checklist.filter(x=>x.category===cat);
     const done = items.filter(x=>x.done).length;
@@ -2466,10 +2730,18 @@ function renderChecklist(c){
         <input name="text" placeholder="Ajouter un élément…" required>
         <button class="vy-btn small" type="submit">+</button>
       </form>
+      <button type="button" class="vy-btn small" data-add-from-modele="${cat}" style="margin-top:8px;">+ Depuis un modèle</button>
     </div>`;
   }
-  c.innerHTML = `<div class="vy-section-head"><h3>Check-list</h3></div>
-  <div class="vy-checklist-cols">${col('before','Avant le départ (démarches)')}${col('packing','Bagages')}</div>`;
+  
+  c.innerHTML = `
+    <div class="vy-checklist-cols">${col('before','Avant le départ (démarches)')}${col('packing','Bagages')}</div>
+  `;
+  
+  c.querySelectorAll('[data-add-from-modele]').forEach(btn=>{
+    btn.addEventListener('click', ()=> openModelePicker(btn.getAttribute('data-add-from-modele')));
+  });
+  
   c.querySelectorAll('[data-check]').forEach(cb=>cb.addEventListener('change', ()=>updateItem('checklist', cb.getAttribute('data-check'), {done: cb.checked})));
   c.querySelectorAll('[data-del-check]').forEach(b=>b.addEventListener('click', ()=>deleteItem('checklist', b.getAttribute('data-del-check'))));
   c.querySelectorAll('[data-add-check]').forEach(f=>f.addEventListener('submit', (e)=>{
@@ -2479,6 +2751,181 @@ function renderChecklist(c){
     if(!text) return;
     addItem('checklist', { category: f.getAttribute('data-add-check'), text, done:false });
   }));
+}
+
+function renderChecklistModeles(c){
+  c.innerHTML = `
+    <div class="vy-section-head" style="margin-bottom:8px;">
+      <h3>Modèles de listes</h3>
+      <button class="vy-btn small" id="vyCreateModeleBtn">+ Créer un modèle</button>
+    </div>
+    <p style="margin:0 0 8px;color:var(--ink-soft);font-size:12px;">Créez des modèles réutilisables puis appliquez-les en un clic, dans la catégorie « Avant le départ » ou « Bagages ».</p>
+    <div id="vyModelesList"></div>
+  `;
+  
+  document.getElementById('vyCreateModeleBtn').addEventListener('click', ()=>openModeleDialog());
+  
+  renderModelesList();
+}
+
+function modeleCategorie(m){
+  return m.categorie === 'before' ? 'before' : 'packing';
+}
+
+function openModeleDialog(id){
+  const editing = Number.isFinite(id);
+  const modele = editing ? modeles.find(m => m.id === id) : null;
+  if(editing && !modele) return;
+
+  const articlesText = editing ? modele.articles.join('\n') : '';
+  const categorie = editing ? modeleCategorie(modele) : 'packing';
+
+  openDialog(editing ? 'Modifier le modèle' : 'Créer un modèle de liste', `
+    <div class="vy-dialog-section">
+      <div class="vy-dialog-section-title">Nom du modèle <span class="vy-req">*</span></div>
+      <div class="vy-field" style="margin-bottom:0;">
+        <input type="text" name="modeleNom" value="${editing ? esc(modele.nom) : ''}" placeholder="Ex: Escapade week-end, Trek 7 jours..." required>
+      </div>
+    </div>
+    <div class="vy-dialog-section">
+      <div class="vy-dialog-section-title">Catégorie</div>
+      <div class="vy-field" style="margin-bottom:0;">
+        <select name="modeleCategorie">
+          <option value="packing" ${categorie==='packing'?'selected':''}>🧳 Bagages</option>
+          <option value="before" ${categorie==='before'?'selected':''}>📝 Avant le départ</option>
+        </select>
+      </div>
+    </div>
+    <div class="vy-dialog-section">
+      <div class="vy-dialog-section-title">Articles du modèle</div>
+      <div class="vy-field" style="margin-bottom:0;">
+        <textarea name="modeleArticles" rows="10" placeholder="Un article par ligne…&#10;Adaptateur secteur&#10;Trousse de pharmacie&#10;Batterie externe">${esc(articlesText)}</textarea>
+        <div class="vy-note" style="margin-top:6px;margin-bottom:0;">Un article par ligne.</div>
+      </div>
+    </div>
+  `, async (fd) => {
+    const nom = String(fd.get('modeleNom') || '').trim();
+    const categorieSel = fd.get('modeleCategorie') === 'before' ? 'before' : 'packing';
+    const articlesFiltered = String(fd.get('modeleArticles') || '')
+      .split('\n')
+      .map(a => a.trim())
+      .filter(Boolean);
+
+    if(!nom){
+      alert('Veuillez donner un nom au modèle.');
+      return;
+    }
+    if(!articlesFiltered.length){
+      alert('Veuillez ajouter au moins un article.');
+      return;
+    }
+
+    if(editing){
+      modele.nom = nom;
+      modele.categorie = categorieSel;
+      modele.articles = articlesFiltered;
+    } else {
+      const newId = modeles.length ? Math.max(...modeles.map(m => Number(m.id) || 0)) + 1 : 1;
+      modeles.push({ id: newId, nom, categorie: categorieSel, articles: articlesFiltered });
+    }
+
+    markDirty();
+    dialog.close();
+    checklistView = 'modeles';
+    renderChecklist(document.getElementById('vyTabContent'));
+  }, editing ? 'Mettre à jour' : 'Sauvegarder');
+}
+
+function renderModelesList(){
+  const container = document.getElementById('vyModelesList');
+  if(!container) return;
+  
+  if(!modeles.length){
+    container.innerHTML = '<div class="vy-empty-hint">Aucun modèle pour le moment.</div>';
+    return;
+  }
+  
+  function section(cat, title){
+    const items = modeles.filter(m => modeleCategorie(m) === cat);
+    if(!items.length) return `<div class="vy-modeles-section"><h4>${title}</h4><div class="vy-empty-hint">Aucun modèle.</div></div>`;
+    return `<div class="vy-modeles-section">
+      <h4>${title}</h4>
+      <div class="vy-modeles-grid">
+        ${items.map(m => `
+          <div class="vy-modele-card">
+            <div>
+              <div class="vy-modele-card-title">${esc(m.nom)}</div>
+              <div class="vy-modele-count">${m.articles.length} article${m.articles.length>1?'s':''}</div>
+            </div>
+            <div class="vy-modele-actions">
+              <button type="button" class="vy-iconbtn" data-edit-modele="${m.id}" title="Modifier">✎</button>
+              <button type="button" class="vy-iconbtn" data-del-modele="${m.id}" title="Supprimer">🗑</button>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    </div>`;
+  }
+  
+  container.innerHTML = section('before', '📝 Avant le départ') + section('packing', '🧳 Bagages');
+
+  container.querySelectorAll('[data-edit-modele]').forEach(btn=>{
+    btn.addEventListener('click', ()=>openModeleDialog(Number(btn.getAttribute('data-edit-modele'))));
+  });
+  container.querySelectorAll('[data-del-modele]').forEach(btn=>{
+    btn.addEventListener('click', ()=>deleteModele(Number(btn.getAttribute('data-del-modele'))));
+  });
+}
+
+function deleteModele(id){
+  if(!confirm('Supprimer ce modèle ?')) return;
+  modeles = modeles.filter(m=>m.id!==id);
+  markDirty();
+  renderModelesList();
+}
+
+function openModelePicker(cat){
+  const filtered = modeles.filter(m => modeleCategorie(m) === cat);
+  if(!filtered.length){
+    alert('Aucun modèle disponible dans cette catégorie. Créez d\'abord un modèle dans "Modèles de listes".');
+    return;
+  }
+  openDialog('Ajouter une liste depuis un modèle', `
+    <div class="vy-dialog-section">
+      <div class="vy-dialog-section-title">Choisir un modèle</div>
+      <div class="vy-modele-picker-list">
+        ${filtered.map(m=>`
+          <label class="vy-modele-picker-item">
+            <input type="radio" name="modeleId" value="${m.id}" ${m===filtered[0]?'checked':''} style="margin-right:8px;">
+            <strong>${esc(m.nom)}</strong>
+            <span class="sub">${m.articles.length} article${m.articles.length>1?'s':''}</span>
+          </label>
+        `).join('')}
+      </div>
+    </div>
+  `, async (fd)=>{
+    const modeleId = Number(fd.get('modeleId'));
+    if(!modeleId) return;
+    applyModele(modeleId);
+    dialog.close();
+  }, 'Ajouter les articles');
+}
+
+function applyModele(modeloId){
+  const modele = modeles.find(m=>m.id===modeloId);
+  if(!modele) return;
+  const cat = modeleCategorie(modele);
+
+  modele.articles
+    .map(a => String(a || '').trim())
+    .filter(Boolean)
+    .forEach(article => {
+      currentTrip.checklist.push({ id: genId(), category: cat, text: article, done: false });
+    });
+
+  markDirty();
+  checklistView = 'packing';
+  renderChecklist(document.getElementById('vyTabContent'));
 }
 
 // ---------------------------------------------------------------- LEAFLET MAP
@@ -2626,14 +3073,14 @@ function openNewTripDialog(){
   openDialog('Nouveau voyage ✈', `
     <div class="vy-dialog-section">
       <div class="vy-dialog-section-title">Destination</div>
-      <div class="vy-field"><label>Nom du voyage</label><input name="name" required placeholder="Japon 2026"></div>
-      <div class="vy-field" style="margin-bottom:0"><label>Pays / destination</label><input name="country" required placeholder="Japon"></div>
+      <div class="vy-field"><label>Nom du voyage <span class="vy-req">*</span></label><input name="name" required placeholder="Japon 2026"></div>
+      <div class="vy-field" style="margin-bottom:0"><label>Pays / destination <span class="vy-req">*</span></label><input name="country" required placeholder="Japon"></div>
     </div>
     <div class="vy-dialog-section">
       <div class="vy-dialog-section-title">Dates</div>
       <div class="vy-date-pair">
-        <div class="vy-field"><label>Départ</label><input type="date" name="startDate" required></div>
-        <div class="vy-field"><label>Retour</label><input type="date" name="endDate" required></div>
+        <div class="vy-field"><label>Départ <span class="vy-req">*</span></label><input type="date" name="startDate" required></div>
+        <div class="vy-field"><label>Retour <span class="vy-req">*</span></label><input type="date" name="endDate" required></div>
       </div>
     </div>
     <div class="vy-dialog-section">
@@ -2657,14 +3104,14 @@ function openEditTripDialog(){
   openDialog('Modifier le voyage ✈', `
     <div class="vy-dialog-section">
       <div class="vy-dialog-section-title">Destination</div>
-      <div class="vy-field"><label>Nom du voyage</label><input name="name" required value="${esc(m.name)}"></div>
-      <div class="vy-field" style="margin-bottom:0"><label>Pays / destination</label><input name="country" required value="${esc(m.country)}"></div>
+      <div class="vy-field"><label>Nom du voyage <span class="vy-req">*</span></label><input name="name" required value="${esc(m.name)}"></div>
+      <div class="vy-field" style="margin-bottom:0"><label>Pays / destination <span class="vy-req">*</span></label><input name="country" required value="${esc(m.country)}"></div>
     </div>
     <div class="vy-dialog-section">
       <div class="vy-dialog-section-title">Dates</div>
       <div class="vy-date-pair">
-        <div class="vy-field"><label>Départ</label><input type="date" name="startDate" required value="${esc(m.startDate)}"></div>
-        <div class="vy-field"><label>Retour</label><input type="date" name="endDate" required value="${esc(m.endDate)}"></div>
+        <div class="vy-field"><label>Départ <span class="vy-req">*</span></label><input type="date" name="startDate" required value="${esc(m.startDate)}"></div>
+        <div class="vy-field"><label>Retour <span class="vy-req">*</span></label><input type="date" name="endDate" required value="${esc(m.endDate)}"></div>
       </div>
     </div>
     <div class="vy-dialog-section">

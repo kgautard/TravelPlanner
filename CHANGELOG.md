@@ -1,6 +1,10 @@
 CHANGELOG
 ============================
 
+### [1.2.0]
+- Modification of the text and size of the homepage buttons
+- Ajout
+
 ### [1.0.0]  - 2017-06-20 
 - Fondations & Core (vols, hôtels, transports, lieux, multi-voyages, File System API)
 - Itinéraire day-by-day, export ICS
