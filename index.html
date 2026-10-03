@@ -3006,10 +3006,10 @@ function drawMap(){
   const isNewMapInstance = !mapObj;
   if(!mapObj){
     mapObj = L.map(mapDiv, { attributionControl: true }).setView([35.68, 139.76], 6);
-    // OpenTopoMap: tuiles OSM, gratuit, sans clé API, sans blocage
-    L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
-      maxZoom: 17,
-      attribution: '&copy; OpenStreetMap contributors &copy; OpenTopoMap'
+    // OpenStreetMap - devrait fonctionner sur GitHub Pages
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '&copy; OpenStreetMap contributors'
     }).addTo(mapObj);
     markersLayer = L.layerGroup().addTo(mapObj);
     routeLayer = L.layerGroup().addTo(mapObj);
